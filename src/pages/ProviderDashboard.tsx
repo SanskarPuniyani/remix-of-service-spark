@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Briefcase, Star, DollarSign, Clock, CheckCircle, XCircle, LogOut, ChevronDown, TrendingUp, Calendar } from "lucide-react";
+import { Briefcase, Star, DollarSign, Clock, CheckCircle, XCircle, LogOut, ChevronDown, TrendingUp, Calendar, PlusCircle, Settings, Users, UserPlus, Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 import Navbar from "@/components/landing/Navbar";
+import { ProfileEditModal } from "@/components/ProfileEditModal";
 
 type Booking = {
   id: string;
@@ -17,6 +18,14 @@ type Booking = {
   final_price: number;
   urgency: string;
   user_id: string;
+  provider_id: string;
+  worker_id?: string;
+  customer_phone?: string;
+  customer_address?: {
+    house_no: string;
+    area: string;
+    city: string;
+  };
 };
 
 type Provider = {
@@ -31,6 +40,16 @@ type Provider = {
   is_active: boolean;
 };
 
+type Worker = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  is_active: boolean;
+  user_id?: string;
+  status: "pending" | "accepted";
+};
+
 const statusColors: Record<string, string> = {
   pending: "bg-warning/20 text-warning",
   confirmed: "bg-primary/20 text-primary",
@@ -42,10 +61,32 @@ const ProviderDashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [provider, setProvider] = useState<Provider | null>(null);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"all" | "pending" | "confirmed" | "completed">("all");
+  const [tab, setTab] = useState<"all" | "pending" | "confirmed" | "completed" | "workers">("all");
+  const [assigningJobId, setAssigningJobId] = useState<string | null>(null);
+  const [newWorkerName, setNewWorkerName] = useState("");
+  const [newWorkerPhone, setNewWorkerPhone] = useState("");
+  const [newWorkerEmail, setNewWorkerEmail] = useState("");
+  const [isAddingWorker, setIsAddingWorker] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  const deleteWorker = async (workerId: string) => {
+    const { error } = await supabase
+      .from("workers")
+      .delete()
+      .eq("id", workerId);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Worker removed" });
+      setWorkers(prev => prev.filter(w => w.id !== workerId));
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -58,26 +99,240 @@ const ProviderDashboard = () => {
   const fetchData = async () => {
     if (!user) return;
 
-    const { data: providerData } = await supabase
+    const { data: providersData } = await supabase
       .from("providers")
       .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+      .eq("user_id", user.id);
 
-    if (!providerData) {
+    if (!providersData || providersData.length === 0) {
       navigate("/provider/setup");
       return;
     }
-    setProvider(providerData);
+
+    setProviders(providersData);
+    
+    // Set active provider from URL or default to first
+    const searchParams = new URLSearchParams(window.location.search);
+    const providerId = searchParams.get("providerId");
+    const active = providerId 
+      ? providersData.find(p => p.id === providerId) || providersData[0]
+      : providersData[0];
+    
+    setActiveProvider(active);
 
     const { data: bookingData } = await supabase
       .from("bookings")
       .select("*")
-      .eq("provider_id", providerData.id)
+      .eq("provider_id", active.id)
       .order("created_at", { ascending: false });
 
-    setBookings(bookingData || []);
+    if (bookingData && bookingData.length > 0) {
+      const customerIds = [...new Set(bookingData.map((b) => b.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, phone, house_no, area, city")
+        .in("user_id", customerIds);
+
+      const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+
+      setBookings(
+        bookingData.map((b) => {
+          const profile = profileMap.get(b.user_id);
+          return {
+            ...b,
+            customer_phone: profile?.phone,
+            customer_address: profile ? {
+              house_no: profile.house_no,
+              area: profile.area,
+              city: profile.city
+            } : undefined
+          };
+        })
+      );
+    } else {
+      setBookings([]);
+    }
+
+    const { data: workerData } = await supabase
+      .from("workers")
+      .select("*")
+      .eq("provider_id", active.id);
+    
+    setWorkers(workerData || []);
     setLoading(false);
+  };
+
+  const addWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeProvider || !newWorkerEmail) return;
+
+    setIsAddingWorker(true);
+
+    // 1. Find the user in the profiles table
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, service_category, city")
+      .eq("email", newWorkerEmail)
+      .eq("role", "worker")
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      setIsAddingWorker(false);
+      toast({ 
+        title: "Worker Not Found", 
+        description: "No worker is registered with this email. Please ask them to sign up first.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // 2. Check if their service category matches the provider's
+    if (profile.service_category !== activeProvider.service_category) {
+      setIsAddingWorker(false);
+      toast({ 
+        title: "Service Mismatch", 
+        description: `This worker is registered for ${profile.service_category}, not ${activeProvider.service_category}.`, 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // 2b. Check if their city matches the provider's city
+    // We need to fetch the provider's city first
+    const { data: providerProfile } = await supabase
+      .from("profiles")
+      .select("city")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profile.city !== providerProfile?.city) {
+      setIsAddingWorker(false);
+      toast({ 
+        title: "City Mismatch", 
+        description: `Workers must be in the same city (${providerProfile?.city}) as the provider.`, 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // 3. Try to insert them into the workers table
+    const { data, error } = await supabase
+      .from("workers")
+      .insert({
+        provider_id: activeProvider.id,
+        user_id: profile.user_id,
+        name: profile.full_name || newWorkerName, // Fallback name
+        email: newWorkerEmail,
+        phone: newWorkerPhone, // This could also be pulled from profile if available
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    setIsAddingWorker(false);
+
+    if (error) {
+      if (error.code === "23505") { // Unique constraint violation
+        toast({ 
+          title: "Already Employed", 
+          description: "This worker is already registered with another provider or has a pending request.", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
+    } else {
+      toast({ title: "Request Sent!", description: `An employment request has been sent to ${data.name}.` });
+      setWorkers(prev => [...prev, data]);
+      setNewWorkerName("");
+      setNewWorkerPhone("");
+      setNewWorkerEmail("");
+    }
+  };
+
+  const toggleWorkerStatus = async (workerId: string, currentStatus: boolean) => {
+    const { error } = await supabase
+      .from("workers")
+      .update({ is_active: !currentStatus })
+      .eq("id", workerId);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setWorkers(prev => prev.map(w => w.id === workerId ? { ...w, is_active: !currentStatus } : w));
+    }
+  };
+
+  const handleProviderSwitch = (p: Provider) => {
+    setActiveProvider(p);
+    setLoading(true);
+    navigate(`/provider/dashboard?providerId=${p.id}`, { replace: true });
+  };
+
+  // Re-fetch bookings and workers when active provider changes
+  useEffect(() => {
+    if (activeProvider) {
+      const fetchProviderDetails = async () => {
+        const { data: bookingData } = await supabase
+          .from("bookings")
+          .select("*")
+          .eq("provider_id", activeProvider.id)
+          .order("created_at", { ascending: false });
+
+        if (bookingData && bookingData.length > 0) {
+          const customerIds = [...new Set(bookingData.map((b) => b.user_id))];
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, phone, house_no, area, city")
+            .in("user_id", customerIds);
+
+          const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+
+          setBookings(
+            bookingData.map((b) => {
+              const profile = profileMap.get(b.user_id);
+              return {
+                ...b,
+                customer_phone: profile?.phone,
+                customer_address: profile ? {
+                  house_no: profile.house_no,
+                  area: profile.area,
+                  city: profile.city
+                } : undefined
+              };
+            })
+          );
+        } else {
+          setBookings([]);
+        }
+
+        const { data: workerData } = await supabase
+          .from("workers")
+          .select("*")
+          .eq("provider_id", activeProvider.id);
+        
+        setWorkers(workerData || []);
+        setLoading(false);
+      };
+      fetchProviderDetails();
+    }
+  }, [activeProvider?.id]);
+
+  const assignWorker = async (bookingId: string, workerId: string) => {
+    const { error } = await supabase
+      .from("bookings")
+      .update({ worker_id: workerId, status: "confirmed" })
+      .eq("id", bookingId);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Worker Assigned!" });
+      setBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, worker_id: workerId, status: "confirmed" } : b))
+      );
+      setAssigningJobId(null);
+    }
   };
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
@@ -123,26 +378,88 @@ const ProviderDashboard = () => {
       <div className="min-h-screen relative">
         <Navbar />
         <div className="pt-24 pb-16 px-4 sm:px-8 max-w-6xl mx-auto">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-10"
-          >
-            <span className="text-xs font-semibold tracking-[0.3em] uppercase text-primary mb-2 block">Dashboard</span>
-            <h1 className="text-3xl sm:text-4xl font-bold font-display tracking-tight">
-              Welcome, <span className="gradient-text">{provider?.service_name}</span>
-            </h1>
-            <p className="text-muted-foreground mt-1">{provider?.service_category} · {provider?.service_area}</p>
-          </motion.div>
+          {/* Header & Service Switcher */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="text-xs font-semibold tracking-[0.3em] uppercase text-primary mb-2 block">Dashboard</span>
+              <h1 className="text-3xl sm:text-4xl font-bold font-display tracking-tight">
+                Welcome, <span className="gradient-text">{activeProvider?.service_name}</span>
+              </h1>
+              <p className="text-muted-foreground mt-1">{activeProvider?.service_category} · {activeProvider?.service_area}</p>
+            </motion.div>
+
+            <div className="flex items-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsEditingProfile(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/50 border border-border/50 text-sm font-semibold hover:bg-secondary transition-all"
+              >
+                <Settings className="w-4 h-4" />
+                Edit Profile
+              </motion.button>
+
+              {/* Service Switcher Dropdown */}
+              <div className="relative group">
+                <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/40 border border-border/30 text-sm font-medium hover:bg-secondary/60 transition-all">
+                  <Briefcase className="w-4 h-4 text-primary" />
+                  Switch Service
+                  <ChevronDown className="w-4 h-4 opacity-50" />
+                </button>
+                <div className="absolute right-0 mt-2 w-64 bg-card border border-border/50 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                  <div className="p-2 space-y-1">
+                    {providers.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => handleProviderSwitch(p)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+                          activeProvider?.id === p.id 
+                            ? "bg-primary/10 text-primary" 
+                            : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center font-bold text-xs">
+                          {p.service_name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{p.service_name}</p>
+                          <p className="text-[10px] opacity-60">{p.service_category}</p>
+                        </div>
+                      </button>
+                    ))}
+                    <div className="border-t border-border/50 my-2 pt-2">
+                      <button 
+                        onClick={() => navigate("/provider/setup")}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-primary hover:bg-primary/5 transition-all"
+                      >
+                        <PlusCircle className="w-5 h-5" />
+                        <span className="text-sm font-semibold">Add New Service</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={signOut}
+                className="p-2.5 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
             {[
               { icon: TrendingUp, label: "Total Earnings", value: `₹${totalEarnings.toLocaleString()}`, accent: true },
-              { icon: Briefcase, label: "Completed Jobs", value: provider?.completed_jobs || 0 },
-              { icon: Star, label: "Rating", value: provider?.rating || "5.0" },
+              { icon: Briefcase, label: "Completed Jobs", value: activeProvider?.completed_jobs || 0 },
+              { icon: Star, label: "Rating", value: activeProvider?.rating || "5.0" },
               { icon: Calendar, label: "Pending", value: pendingCount },
             ].map((stat, i) => (
               <motion.div
@@ -165,11 +482,11 @@ const ProviderDashboard = () => {
 
           {/* Booking Tabs */}
           <div className="flex items-center gap-2 mb-6 flex-wrap">
-            {(["all", "pending", "confirmed", "completed"] as const).map((t) => (
+            {(["all", "pending", "confirmed", "completed", "workers"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 capitalize ${
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 capitalize flex items-center gap-2 ${
                   tab === t
                     ? "text-primary-foreground"
                     : "bg-secondary/40 text-muted-foreground hover:text-foreground"
@@ -180,18 +497,124 @@ const ProviderDashboard = () => {
                     : {}
                 }
               >
-                {t} {t === "pending" && pendingCount > 0 && (
-                  <span className="ml-1 bg-warning/20 text-warning px-1.5 py-0.5 rounded-full text-xs">{pendingCount}</span>
+                {t === "workers" && <Users className="w-4 h-4" />}
+                {t} 
+                {t === "pending" && pendingCount > 0 && (
+                  <span className="bg-warning/20 text-warning px-1.5 py-0.5 rounded-full text-xs">{pendingCount}</span>
+                )}
+                {t === "workers" && (
+                  <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded-full text-xs">{workers.length}</span>
                 )}
               </button>
             ))}
           </div>
 
-          {/* Bookings List */}
+          {/* Content Area */}
           <div className="space-y-3">
             <AnimatePresence mode="popLayout">
-              {filteredBookings.length === 0 ? (
+              {tab === "workers" ? (
                 <motion.div
+                  key="workers-panel"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  {/* Add Worker Form */}
+                  <form onSubmit={addWorker} className="glass-card p-6 rounded-2xl flex flex-col md:flex-row gap-4 items-end">
+                    <div className="flex-1 space-y-2 w-full">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Worker Name</label>
+                      <input 
+                        required
+                        value={newWorkerName}
+                        onChange={(e) => setNewWorkerName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full h-11 px-4 rounded-xl bg-secondary/50 border border-border/30 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2 w-full">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Email Address</label>
+                      <input 
+                        type="email"
+                        required
+                        value={newWorkerEmail}
+                        onChange={(e) => setNewWorkerEmail(e.target.value)}
+                        placeholder="john@example.com"
+                        className="w-full h-11 px-4 rounded-xl bg-secondary/50 border border-border/30 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2 w-full">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Phone Number</label>
+                      <input 
+                        value={newWorkerPhone}
+                        onChange={(e) => setNewWorkerPhone(e.target.value)}
+                        placeholder="+91 9876543210"
+                        className="w-full h-11 px-4 rounded-xl bg-secondary/50 border border-border/30 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <button 
+                      type="submit"
+                      disabled={isAddingWorker}
+                      className="h-11 px-6 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-all disabled:opacity-50"
+                    >
+                      {isAddingWorker ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                      Add Worker
+                    </button>
+                  </form>
+
+                  {/* Workers List */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {workers.length === 0 ? (
+                      <div className="col-span-full py-12 text-center text-muted-foreground bg-secondary/20 rounded-2xl border border-dashed border-border/50">
+                        No workers added yet.
+                      </div>
+                    ) : (
+                      workers.map((worker) => (
+                        <div key={worker.id} className="glass-card p-4 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary">
+                              {worker.name.slice(0, 1).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm flex items-center gap-2">
+                                {worker.name}
+                                {worker.status === "accepted" ? (
+                                  <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">Linked</span>
+                                ) : (
+                                  <span className="text-[10px] bg-warning/10 text-warning px-1.5 py-0.5 rounded-full">Request Sent</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{worker.email}</p>
+                              <p className="text-[10px] text-muted-foreground/60">{worker.phone || "No phone"}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => toggleWorkerStatus(worker.id, worker.is_active)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                worker.is_active 
+                                  ? "bg-success/10 text-success hover:bg-success/20" 
+                                  : "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                              }`}
+                            >
+                              {worker.is_active ? "Active" : "Inactive"}
+                            </button>
+                            <button 
+                              onClick={() => deleteWorker(worker.id)}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+                              title="Remove Worker"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              ) : filteredBookings.length === 0 ? (
+                <motion.div
+                  key="empty"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-center py-16 text-muted-foreground"
@@ -199,67 +622,127 @@ const ProviderDashboard = () => {
                   No bookings found
                 </motion.div>
               ) : (
-                filteredBookings.map((booking, i) => (
-                  <motion.div
-                    key={booking.id}
-                    layout
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                    className="rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                    style={{
-                      background: "hsl(var(--glass) / 0.4)",
-                      border: "1px solid hsl(var(--glass-border) / 0.2)",
-                    }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-semibold text-foreground">{booking.service_name}</h3>
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${statusColors[booking.status] || "bg-secondary text-muted-foreground"}`}>
-                          {booking.status}
-                        </span>
-                        {booking.urgency !== "normal" && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-medium capitalize">
-                            {booking.urgency}
+                filteredBookings.map((booking, i) => {
+                  const assignedWorker = workers.find(w => w.id === booking.worker_id);
+                  return (
+                    <motion.div
+                      key={booking.id}
+                      layout
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3, delay: i * 0.05 }}
+                      className="rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      style={{
+                        background: "hsl(var(--glass) / 0.4)",
+                        border: "1px solid hsl(var(--glass-border) / 0.2)",
+                      }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="font-semibold text-foreground">{booking.service_name}</h3>
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${statusColors[booking.status] || "bg-secondary text-muted-foreground"}`}>
+                            {booking.status}
                           </span>
+                          {booking.urgency !== "normal" && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-medium capitalize">
+                              {booking.urgency}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                          <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {booking.booking_date}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {booking.booking_time}</span>
+                          <span className="font-semibold text-foreground">₹{booking.final_price}</span>
+                        </div>
+                        {booking.customer_phone && (
+                          <div className="text-xs text-muted-foreground mb-1">
+                            Phone: <a href={`tel:${booking.customer_phone}`} className="text-primary hover:underline">{booking.customer_phone}</a>
+                          </div>
+                        )}
+                        {booking.customer_address && (
+                          <div className="text-xs text-muted-foreground mb-2 flex items-start gap-1">
+                            <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                            <span>
+                              {booking.customer_address.house_no}, {booking.customer_address.area}, {booking.customer_address.city}
+                            </span>
+                          </div>
+                        )}
+                        {assignedWorker && (
+                          <div className="flex items-center gap-1.5 text-xs text-primary font-medium bg-primary/5 w-fit px-2 py-1 rounded-md">
+                            <Users className="w-3 h-3" />
+                            Assigned to: {assignedWorker.name}
+                          </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {booking.booking_date}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {booking.booking_time}</span>
-                        <span className="font-semibold text-foreground">₹{booking.final_price}</span>
-                      </div>
-                    </div>
 
-                    {booking.status === "pending" && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => updateBookingStatus(booking.id, "confirmed")}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground transition-all"
-                          style={{ background: "linear-gradient(135deg, hsl(160 84% 39%), hsl(160 84% 30%))" }}
-                        >
-                          <CheckCircle className="w-4 h-4" /> Accept
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => updateBookingStatus(booking.id, "cancelled")}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all"
-                        >
-                          <XCircle className="w-4 h-4" /> Reject
-                        </motion.button>
-                      </div>
-                    )}
-                  </motion.div>
-                ))
+                      {booking.status === "pending" && (
+                        <div className="flex flex-col gap-2 shrink-0">
+                          {assigningJobId === booking.id ? (
+                            <div className="flex flex-col gap-2 p-3 bg-secondary/30 rounded-xl border border-border/50">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Assign Worker</p>
+                              <div className="flex flex-wrap gap-2">
+                                {workers.filter(w => w.status === "accepted" && w.is_active).length === 0 ? (
+                                  <p className="text-[10px] text-muted-foreground italic">No accepted workers available</p>
+                                ) : (
+                                  workers.filter(w => w.status === "accepted" && w.is_active).map(w => (
+                                    <button
+                                      key={w.id}
+                                      onClick={() => assignWorker(booking.id, w.id)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary hover:text-white transition-all border border-primary/20"
+                                    >
+                                      {w.name}
+                                    </button>
+                                  ))
+                                )}
+                                <button 
+                                  onClick={() => setAssigningJobId(null)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-secondary text-muted-foreground text-[10px] font-bold hover:bg-secondary/80"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setAssigningJobId(booking.id)}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground transition-all"
+                                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
+                              >
+                                <UserPlus className="w-4 h-4" /> Accept & Assign
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => updateBookingStatus(booking.id, "cancelled")}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all"
+                              >
+                                <XCircle className="w-4 h-4" /> Decline
+                              </motion.button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })
               )}
             </AnimatePresence>
           </div>
         </div>
       </div>
+
+      {user && (
+        <ProfileEditModal
+          userId={user.id}
+          open={isEditingProfile}
+          onClose={() => setIsEditingProfile(false)}
+          onSuccess={fetchData}
+        />
+      )}
     </PageTransition>
   );
 };

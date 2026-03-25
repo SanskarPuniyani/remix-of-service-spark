@@ -1,10 +1,15 @@
 import { useState, useMemo } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2, Check } from "lucide-react";
+import { Zap, Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2, Check, Phone, Briefcase, MapPin, Home, Building } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
+
+const serviceCategories = [
+  "Electrician", "Plumber", "Deep Cleaning", "Beautician",
+  "Painter", "Pest Control", "Carpenter", "AC Repair",
+];
 
 /* ── Floating Label Input ── */
 const FloatingInput = ({
@@ -112,13 +117,19 @@ const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [role, setRole] = useState<"customer" | "provider">(
+  const [role, setRole] = useState<"customer" | "provider" | "worker">(
+    searchParams.get("role") === "worker" ? "worker" : 
     searchParams.get("mode") === "provider" ? "provider" : "customer"
   );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [houseNo, setHouseNo] = useState("");
+  const [area, setArea] = useState("");
+  const [city, setCity] = useState("");
+  const [serviceCategory, setServiceCategory] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -140,7 +151,7 @@ const AuthPage = () => {
         toast({ title: "Login Failed", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Welcome back!" });
-        // Check if provider → redirect to dashboard
+        // Check if provider or worker → redirect accordingly
         const userRole = data.user?.user_metadata?.role;
         if (userRole === "provider") {
           const { data: providerData } = await supabase
@@ -149,6 +160,8 @@ const AuthPage = () => {
             .eq("user_id", data.user.id)
             .maybeSingle();
           navigate(providerData ? "/provider/dashboard" : "/provider/setup");
+        } else if (userRole === "worker") {
+          navigate("/worker/dashboard");
         } else {
           navigate(redirectTo);
         }
@@ -158,7 +171,15 @@ const AuthPage = () => {
         email,
         password,
         options: {
-          data: { full_name: fullName, role },
+          data: { 
+            full_name: fullName, 
+            phone, 
+            house_no: houseNo,
+            area,
+            city,
+            role,
+            service_category: role === "worker" ? serviceCategory : undefined 
+          },
           emailRedirectTo: window.location.origin,
         },
       });
@@ -169,6 +190,8 @@ const AuthPage = () => {
         toast({ title: "Account created!", description: "You are now signed in." });
         if (role === "provider") {
           navigate("/provider/setup");
+        } else if (role === "worker") {
+          navigate("/worker/dashboard");
         } else {
           navigate(redirectTo);
         }
@@ -273,7 +296,7 @@ const AuthPage = () => {
                 {/* Role selector (signup only) */}
                 {!isLogin && (
                   <div className="flex gap-2 mb-6">
-                    {(["customer", "provider"] as const).map((r) => (
+                    {(["customer", "provider", "worker"] as const).map((r) => (
                       <button
                         key={r}
                         onClick={() => setRole(r)}
@@ -288,7 +311,7 @@ const AuthPage = () => {
                             : {}
                         }
                       >
-                        {r === "customer" ? "Customer" : "Provider"}
+                        {r === "customer" ? "Customer" : r === "provider" ? "Provider" : "Worker"}
                       </button>
                     ))}
                   </div>
@@ -296,7 +319,41 @@ const AuthPage = () => {
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   {!isLogin && (
-                    <FloatingInput icon={User} label="Full Name" value={fullName} onChange={setFullName} required />
+                    <>
+                      <FloatingInput icon={User} label="Full Name" value={fullName} onChange={setFullName} required />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FloatingInput icon={Phone} label="Phone Number" type="tel" value={phone} onChange={setPhone} required />
+                        <FloatingInput icon={Home} label="House No./Building" value={houseNo} onChange={setHouseNo} required />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FloatingInput icon={Building} label="Area" value={area} onChange={setArea} required />
+                        <FloatingInput icon={MapPin} label="City" value={city} onChange={setCity} required />
+                      </div>
+                      
+                      {role === "worker" && (
+                        <div className="space-y-2 mb-4">
+                          <label className="text-[10px] font-medium text-purple-400/80 ml-4 uppercase tracking-wider flex items-center gap-1.5">
+                            <Briefcase className="w-3 h-3" /> Select Your Service Category
+                          </label>
+                          <div className="grid grid-cols-2 gap-2 px-1">
+                            {serviceCategories.map((cat) => (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() => setServiceCategory(cat)}
+                                className={`py-2 px-3 rounded-xl text-[11px] font-semibold transition-all duration-300 border ${
+                                  serviceCategory === cat
+                                    ? "bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+                                    : "bg-white/[0.03] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.05]"
+                                }`}
+                              >
+                                {cat}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <FloatingInput icon={Mail} label="Email address" type="email" value={email} onChange={setEmail} required />
@@ -366,9 +423,9 @@ const AuthPage = () => {
 
                   {/* Submit */}
                   <motion.button
-                    type="submit"
-                    disabled={loading || (!isLogin && !passwordsMatch)}
-                    className="w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white mt-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden transition-all duration-300"
+                      type="submit"
+                      disabled={loading || (!isLogin && !passwordsMatch) || (!isLogin && (!fullName || !phone || !houseNo || !area || !city)) || (!isLogin && role === "worker" && !serviceCategory)}
+                      className="w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white mt-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden transition-all duration-300"
                     style={{
                       background: "linear-gradient(135deg, #8b5cf6, #3b82f6)",
                       boxShadow: "0 4px 20px rgba(139,92,246,0.3)",

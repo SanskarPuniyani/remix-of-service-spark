@@ -13,6 +13,7 @@ import ServicesPage from "./pages/ServicesPage";
 import ProviderSetup from "./pages/ProviderSetup";
 import ProviderDashboard from "./pages/ProviderDashboard";
 import MyBookings from "./pages/MyBookings";
+import WorkerDashboard from "./pages/WorkerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const AnimatedRoutes = () => {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/provider/setup" element={<ProviderSetup />} />
         <Route path="/provider/dashboard" element={<ProviderDashboard />} />
+        <Route path="/worker/dashboard" element={<WorkerDashboard />} />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

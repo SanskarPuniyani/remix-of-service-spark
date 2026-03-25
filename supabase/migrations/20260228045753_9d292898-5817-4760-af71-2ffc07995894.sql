@@ -3,7 +3,8 @@ CREATE TABLE public.profiles (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL UNIQUE,
   full_name TEXT,
-  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'provider')),
+  email TEXT,
+  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'provider', 'worker')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
@@ -17,10 +18,11 @@ CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (user_id, full_name, role)
+  INSERT INTO public.profiles (user_id, full_name, email, role)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'role', 'customer')
   );
   RETURN NEW;

@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { Briefcase, Clock, CheckCircle, XCircle, LogOut, Calendar, Star, Settings, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 import Navbar from "@/components/landing/Navbar";
+import ReviewModal from "@/components/ReviewModal";
+import { ProfileEditModal } from "@/components/ProfileEditModal";
 
 type Booking = {
   id: string;
@@ -18,6 +20,9 @@ type Booking = {
   urgency: string;
   provider_id: string;
   provider_name?: string;
+  worker_id?: string;
+  worker_name?: string;
+  has_review?: boolean;
 };
 
 const statusColors: Record<string, string> = {
@@ -34,6 +39,8 @@ const MyBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"all" | "pending" | "confirmed" | "completed">("all");
+  const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -54,17 +61,49 @@ const MyBookings = () => {
 
     if (data && data.length > 0) {
       const providerIds = [...new Set(data.map((b) => b.provider_id))];
+      
+      // Fetch provider data along with their user_id to get profile names
       const { data: providers } = await supabase
         .from("providers")
-        .select("id, service_name")
+        .select("id, user_id, service_name")
         .in("id", providerIds);
 
-      const providerMap = new Map(providers?.map((p) => [p.id, p.service_name]) || []);
+      const providerUserIds = providers?.map((p) => p.user_id) || [];
+      
+      // Fetch full names from profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", providerUserIds);
+
+      const profileMap = new Map(profiles?.map((p) => [p.user_id, p.full_name]) || []);
+      const providerMap = new Map(providers?.map((p) => [p.id, profileMap.get(p.user_id) || p.service_name]) || []);
+
+      // Fetch worker names
+      const workerIds = [...new Set(data.filter(b => b.worker_id).map(b => b.worker_id))];
+      let workerMap = new Map();
+      if (workerIds.length > 0) {
+        const { data: workers } = await supabase
+          .from("workers")
+          .select("id, name")
+          .in("id", workerIds);
+        workerMap = new Map(workers?.map(w => [w.id, w.name]) || []);
+      }
+
+      // Check for existing reviews
+      const { data: reviews } = await supabase
+        .from("reviews")
+        .select("booking_id")
+        .in("booking_id", data.map(b => b.id));
+
+      const reviewSet = new Set(reviews?.map(r => r.booking_id) || []);
 
       setBookings(
         data.map((b) => ({
           ...b,
           provider_name: providerMap.get(b.provider_id) || "Unknown Provider",
+          worker_name: b.worker_id ? workerMap.get(b.worker_id) : undefined,
+          has_review: reviewSet.has(b.id),
         }))
       );
     } else {
@@ -105,19 +144,27 @@ const MyBookings = () => {
     <PageTransition>
       <div className="min-h-screen relative">
         <Navbar />
-        <div className="pt-24 pb-16 px-4 sm:px-8 max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-10"
-          >
-            <span className="text-xs font-semibold tracking-[0.3em] uppercase text-primary mb-2 block">
-              My Bookings
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-bold font-display tracking-tight">
-              Your <span className="gradient-text">Service History</span>
-            </h1>
-          </motion.div>
+        <div className="pt-24 pb-16 px-4 sm:px-8 max-w-5xl mx-auto">
+          <div className="flex justify-between items-start mb-10">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <span className="text-xs font-semibold tracking-[0.3em] uppercase text-primary mb-2 block">Your Appointments</span>
+              <h1 className="text-3xl sm:text-4xl font-bold font-display tracking-tight">
+                My <span className="gradient-text">Bookings</span>
+              </h1>
+            </motion.div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsEditingProfile(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/50 border border-border/50 text-sm font-semibold hover:bg-secondary transition-all"
+            >
+              <Settings className="w-4 h-4" />
+              Edit Profile
+            </motion.button>
+          </div>
 
           {/* Tabs */}
           <div className="flex items-center gap-2 mb-6 flex-wrap">
@@ -206,6 +253,26 @@ const MyBookings = () => {
                         <CheckCircle className="w-4 h-4" /> Mark Completed
                       </motion.button>
                     )}
+
+                    {booking.status === "completed" && !booking.has_review && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setReviewingBooking(booking)}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground transition-all shrink-0"
+                        style={{
+                          background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
+                        }}
+                      >
+                        <Star className="w-4 h-4 fill-current" /> Rate Service
+                      </motion.button>
+                    )}
+
+                    {booking.status === "completed" && booking.has_review && (
+                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground bg-secondary/30 border border-border/50 shrink-0">
+                        <CheckCircle className="w-4 h-4 text-success" /> Reviewed
+                      </div>
+                    )}
                   </motion.div>
                 ))
               )}
@@ -213,6 +280,29 @@ const MyBookings = () => {
           </div>
         </div>
       </div>
+
+      {reviewingBooking && (
+        <ReviewModal
+          open={!!reviewingBooking}
+          onClose={() => setReviewingBooking(null)}
+          bookingId={reviewingBooking.id}
+          providerId={reviewingBooking.provider_id}
+          providerName={reviewingBooking.provider_name || ""}
+          workerId={reviewingBooking.worker_id}
+          workerName={reviewingBooking.worker_name}
+          serviceName={reviewingBooking.service_name}
+          onSuccess={fetchBookings}
+        />
+      )}
+
+      {user && (
+        <ProfileEditModal
+          userId={user.id}
+          open={isEditingProfile}
+          onClose={() => setIsEditingProfile(false)}
+          onSuccess={fetchBookings}
+        />
+      )}
     </PageTransition>
   );
 };

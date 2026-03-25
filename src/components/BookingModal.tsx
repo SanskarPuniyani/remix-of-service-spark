@@ -26,14 +26,13 @@ interface BookingModalProps {
 
 const urgencyOptions = [
   { value: "normal", label: "Normal", multiplier: 1.0, icon: Clock, color: "text-muted-foreground" },
-  { value: "within_24h", label: "Within 24h", multiplier: 1.15, icon: Zap, color: "text-warning" },
-  { value: "immediate", label: "Immediate", multiplier: 1.25, icon: AlertTriangle, color: "text-destructive" },
+  { value: "immediate", label: "Immediate", multiplier: 1.25, icon: Zap, color: "text-warning" },
 ] as const;
 
 const timeSlots = [
-  "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
-  "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM",
-  "05:00 PM", "06:00 PM",
+  "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM",
+  "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM",
+  "06:00 PM", "07:00 PM", "08:00 PM", "09:00 PM",
 ];
 
 const BookingModal = ({ provider, open, onClose, onSuccess }: BookingModalProps) => {
@@ -48,55 +47,119 @@ const BookingModal = ({ provider, open, onClose, onSuccess }: BookingModalProps)
   const selectedUrgency = urgencyOptions.find((u) => u.value === urgency)!;
   const finalPrice = useMemo(() => Math.round(provider.price * selectedUrgency.multiplier), [provider.price, selectedUrgency]);
 
+  const availableSlots = useMemo(() => {
+    if (!date) return [];
+    
+    const now = new Date();
+    const threshold = new Date(now.getTime() + 4 * 60 * 60 * 1000); // Current time + 4 hours
+    const isToday = format(date, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
+
+    return timeSlots.filter((slot) => {
+      // 1. Check if already booked (by worker availability)
+      if (bookedSlots.includes(slot)) return false;
+
+      // 2. 4-hour rule logic
+      const [timePart, ampm] = slot.split(" ");
+      let [hours, minutes] = timePart.split(":").map(Number);
+      if (ampm === "PM" && hours !== 12) hours += 12;
+      if (ampm === "AM" && hours === 12) hours = 0;
+
+      const slotDate = new Date(date);
+      slotDate.setHours(hours, minutes, 0, 0);
+
+      if (urgency === "immediate") {
+        // Immediate: Must be within 4 hours from now (and in the future)
+        return isToday && slotDate > now && slotDate <= threshold;
+      } else {
+        // Normal: Must be AFTER 4 hours from now
+        return slotDate > threshold;
+      }
+    });
+  }, [date, urgency, bookedSlots]);
+
   const handleDateSelect = async (d: Date | undefined) => {
     setDate(d);
     setTime("");
     if (!d) return;
 
-    const { data } = await supabase
-      .from("bookings")
-      .select("booking_time")
+    // 1. Fetch all workers for this provider
+    const { data: workers } = await supabase
+      .from("workers")
+      .select("id")
       .eq("provider_id", provider.id)
+      .eq("is_active", true)
+      .eq("status", "accepted");
+
+    if (!workers || workers.length === 0) {
+      // If no workers, we check provider's own availability
+      const { data: bookings } = await supabase
+        .from("bookings")
+        .select("booking_time")
+        .eq("provider_id", provider.id)
+        .eq("booking_date", format(d, "yyyy-MM-dd"))
+        .in("status", ["pending", "confirmed"]);
+      
+      setBookedSlots(bookings?.map((b) => b.booking_time) ?? []);
+      return;
+    }
+
+    // 2. Fetch all bookings for these workers on this date
+    // ONLY count workers who have accepted the employment
+    const workerIds = workers.map(w => w.id);
+    const { data: workerBookings } = await supabase
+      .from("bookings")
+      .select("booking_time, worker_id")
+      .in("worker_id", workerIds)
       .eq("booking_date", format(d, "yyyy-MM-dd"))
       .in("status", ["pending", "confirmed"]);
 
-    setBookedSlots(data?.map((b) => b.booking_time) ?? []);
+    // 3. A slot is "booked" only if ALL workers are busy at that time
+    const slotCounts: Record<string, number> = {};
+    workerBookings?.forEach(b => {
+      slotCounts[b.booking_time] = (slotCounts[b.booking_time] || 0) + 1;
+    });
+
+    const fullSlots = Object.entries(slotCounts)
+      .filter(([_, count]) => count >= workers.length)
+      .map(([time, _]) => time);
+
+    setBookedSlots(fullSlots);
   };
 
   const handleBook = async () => {
     if (!user || !date || !time) return;
     setLoading(true);
 
-    const payload = {
-      user_id: user.id,
-      provider_id: provider.id,
-      service_name: provider.service,
-      booking_date: format(date, "yyyy-MM-dd"),
-      booking_time: time,
-      urgency,
-      base_price: Number(provider.price),
-      final_price: Number(finalPrice),
-    };
+    try {
+      const payload = {
+        user_id: user.id,
+        provider_id: provider.id,
+        worker_id: null, // Always null initially, provider must assign manually
+        service_name: provider.service,
+        booking_date: format(date, "yyyy-MM-dd"),
+        booking_time: time,
+        urgency,
+        base_price: Number(provider.price),
+        final_price: Number(finalPrice),
+      };
 
-    console.log("Booking payload:", payload);
+      const { data, error } = await supabase.from("bookings").insert(payload).select("id").single();
 
-    const { data, error } = await supabase.from("bookings").insert(payload).select("id").single();
+      if (error) throw error;
 
-    setLoading(false);
-
-    if (error) {
+      onSuccess({
+        id: data.id,
+        providerName: provider.name,
+        date: format(date, "PPP"),
+        time,
+        finalPrice,
+      });
+    } catch (error: any) {
       console.error("Booking error:", error);
       toast({ title: "Booking Failed", description: error.message, variant: "destructive" });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    onSuccess({
-      id: data.id,
-      providerName: provider.name,
-      date: format(date, "PPP"),
-      time,
-      finalPrice,
-    });
   };
 
   return (
@@ -144,13 +207,19 @@ const BookingModal = ({ provider, open, onClose, onSuccess }: BookingModalProps)
             {/* Urgency */}
             <div className="mb-6">
               <label className="text-sm font-medium text-muted-foreground mb-3 block tracking-wide uppercase">Urgency</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {urgencyOptions.map((opt) => {
                   const Icon = opt.icon;
                   return (
                     <button
                       key={opt.value}
-                      onClick={() => setUrgency(opt.value)}
+                      onClick={() => {
+                        setUrgency(opt.value);
+                        setTime("");
+                        if (opt.value === "immediate") {
+                          handleDateSelect(new Date());
+                        }
+                      }}
                       className={cn(
                         "py-3.5 rounded-xl text-xs font-semibold transition-all duration-400 flex flex-col items-center gap-1.5",
                         urgency === opt.value
@@ -171,11 +240,11 @@ const BookingModal = ({ provider, open, onClose, onSuccess }: BookingModalProps)
                   );
                 })}
               </div>
-              {urgency === "within_24h" && (
-                <p className="text-xs text-warning mt-2">⚡ A 15% convenience fee is added for priority scheduling within 24 hours.</p>
-              )}
               {urgency === "immediate" && (
-                <p className="text-xs text-destructive mt-2">🔥 A 25% surcharge applies for immediate same-day service.</p>
+                <p className="text-xs text-warning mt-2">⚡ Service within 4 hours of booking. A 25% surcharge applies.</p>
+              )}
+              {urgency === "normal" && (
+                <p className="text-xs text-muted-foreground mt-2">🕒 Scheduled service (at least 4 hours from now).</p>
               )}
             </div>
 
@@ -184,10 +253,14 @@ const BookingModal = ({ provider, open, onClose, onSuccess }: BookingModalProps)
               <label className="text-sm font-medium text-muted-foreground mb-3 block tracking-wide uppercase">Select Date</label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <button className={cn(
-                    "w-full h-12 px-4 rounded-xl bg-secondary/80 border border-border text-left flex items-center gap-2 transition-all duration-300 focus:ring-2 focus:ring-primary/50",
-                    !date && "text-muted-foreground"
-                  )}>
+                  <button 
+                    disabled={urgency === "immediate"}
+                    className={cn(
+                      "w-full h-12 px-4 rounded-xl bg-secondary/80 border border-border text-left flex items-center gap-2 transition-all duration-300 focus:ring-2 focus:ring-primary/50",
+                      (!date || urgency === "immediate") && "text-muted-foreground",
+                      urgency === "immediate" && "opacity-70 cursor-not-allowed"
+                    )}
+                  >
                     <CalendarIcon className="w-4 h-4" />
                     {date ? format(date, "PPP") : "Pick a date"}
                   </button>
@@ -202,6 +275,9 @@ const BookingModal = ({ provider, open, onClose, onSuccess }: BookingModalProps)
                   />
                 </PopoverContent>
               </Popover>
+              {urgency === "immediate" && (
+                <p className="text-[10px] text-muted-foreground mt-1.5 ml-1 italic">Immediate service is only available for today.</p>
+              )}
             </div>
 
             {/* Time Slots */}
@@ -213,20 +289,21 @@ const BookingModal = ({ provider, open, onClose, onSuccess }: BookingModalProps)
                 className="mb-6"
               >
                 <label className="text-sm font-medium text-muted-foreground mb-3 block tracking-wide uppercase">Select Time</label>
-                {timeSlots.every((slot) => bookedSlots.includes(slot)) ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No slots available for this date. Please try another.</p>
+                {availableSlots.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4 bg-secondary/20 rounded-xl border border-dashed border-border/50">
+                    {urgency === "immediate" 
+                      ? "No immediate slots available for today." 
+                      : "No available slots for this date/urgency combination."}
+                  </p>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                    {timeSlots.map((slot) => {
-                      const isBooked = bookedSlots.includes(slot);
+                    {availableSlots.map((slot) => {
                       return (
                         <button
                           key={slot}
-                          disabled={isBooked}
                           onClick={() => setTime(slot)}
                           className={cn(
                             "py-2.5 rounded-lg text-xs font-medium transition-all duration-300",
-                            isBooked && "opacity-30 cursor-not-allowed line-through",
                             time === slot
                               ? "text-primary-foreground shadow-md"
                               : "glass-card text-muted-foreground hover:text-foreground"

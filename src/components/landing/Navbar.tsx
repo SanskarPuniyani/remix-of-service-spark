@@ -14,7 +14,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, role } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -78,6 +78,32 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
+                {role === "provider" && (
+                  <Link
+                    to="/provider/dashboard"
+                    className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors px-3 py-2 flex items-center gap-1.5"
+                  >
+                    <motion.div
+                      className="w-1.5 h-1.5 rounded-full bg-primary"
+                      animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                    Provider Dashboard
+                  </Link>
+                )}
+                {role === "worker" && (
+                  <Link
+                    to="/worker/dashboard"
+                    className="text-sm font-semibold text-accent hover:text-accent/80 transition-colors px-3 py-2 flex items-center gap-1.5"
+                  >
+                    <motion.div
+                      className="w-1.5 h-1.5 rounded-full bg-accent"
+                      animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                    Worker Dashboard
+                  </Link>
+                )}
                 <Link
                   to="/my-bookings"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"

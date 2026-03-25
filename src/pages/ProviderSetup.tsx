@@ -48,11 +48,19 @@ const ProviderSetup = () => {
       avatar_initials: initials,
     });
 
+    if (!error) {
+      // Ensure profile role is updated to provider if it wasn't already
+      await supabase
+        .from("profiles")
+        .update({ role: "provider" })
+        .eq("user_id", user.id);
+    }
+
     setLoading(false);
     if (error) {
       toast({ title: "Setup Failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Profile created!", description: "Welcome aboard!" });
+      toast({ title: "Service added!", description: "Your new service is now live!" });
       navigate("/provider/dashboard");
     }
   };
@@ -96,8 +104,8 @@ const ProviderSetup = () => {
             >
               <Zap className="w-7 h-7 text-primary-foreground" />
             </motion.div>
-            <h1 className="text-3xl font-bold font-display tracking-tight text-foreground">Set Up Your Profile</h1>
-            <p className="text-muted-foreground mt-2">Tell us about your services to get started</p>
+            <h1 className="text-3xl font-bold font-display tracking-tight text-foreground">Service Setup</h1>
+            <p className="text-muted-foreground mt-2">Add or update your service offerings</p>
           </div>
 
           {/* Form Card */}
@@ -230,7 +238,7 @@ const ProviderSetup = () => {
                 {loading ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Setting up...</>
                 ) : (
-                  <>Complete Setup <ArrowRight className="w-4 h-4" /></>
+                  <>Add Service <ArrowRight className="w-4 h-4" /></>
                 )}
               </motion.button>
             </form>
