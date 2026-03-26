@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 import Navbar from "@/components/landing/Navbar";
-import { ProfileEditModal } from "@/components/ProfileEditModal";
 
 type Booking = {
   id: string;
@@ -36,23 +35,24 @@ const statusColors: Record<string, string> = {
 };
 
 const WorkerDashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [worker, setWorker] = useState<any>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"all" | "pending" | "confirmed" | "completed">("all");
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate("/auth?role=worker");
       return;
     }
-    fetchData();
-  }, [user]);
+    if (user) {
+      fetchData();
+    }
+  }, [user, authLoading]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -233,15 +233,6 @@ const WorkerDashboard = () => {
               )}
             </motion.div>
             <div className="flex gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsEditingProfile(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/50 border border-border/50 text-sm font-semibold hover:bg-secondary transition-all"
-              >
-                <Settings className="w-4 h-4" />
-                Edit Profile
-              </motion.button>
               {worker && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -428,15 +419,6 @@ const WorkerDashboard = () => {
           ) : null}
         </div>
       </div>
-
-      {user && (
-        <ProfileEditModal
-          userId={user.id}
-          open={isEditingProfile}
-          onClose={() => setIsEditingProfile(false)}
-          onSuccess={fetchData}
-        />
-      )}
     </PageTransition>
   );
 };

@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 import Navbar from "@/components/landing/Navbar";
 import ReviewModal from "@/components/ReviewModal";
-import { ProfileEditModal } from "@/components/ProfileEditModal";
 
 type Booking = {
   id: string;
@@ -33,22 +32,23 @@ const statusColors: Record<string, string> = {
 };
 
 const MyBookings = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"all" | "pending" | "confirmed" | "completed">("all");
   const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate("/auth");
       return;
     }
-    fetchBookings();
-  }, [user]);
+    if (user) {
+      fetchBookings();
+    }
+  }, [user, authLoading]);
 
   const fetchBookings = async () => {
     if (!user) return;
@@ -145,7 +145,7 @@ const MyBookings = () => {
       <div className="min-h-screen relative">
         <Navbar />
         <div className="pt-24 pb-16 px-4 sm:px-8 max-w-5xl mx-auto">
-          <div className="flex justify-between items-start mb-10">
+          <div className="flex items-center justify-between mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -155,15 +155,6 @@ const MyBookings = () => {
                 My <span className="gradient-text">Bookings</span>
               </h1>
             </motion.div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setIsEditingProfile(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/50 border border-border/50 text-sm font-semibold hover:bg-secondary transition-all"
-            >
-              <Settings className="w-4 h-4" />
-              Edit Profile
-            </motion.button>
           </div>
 
           {/* Tabs */}
@@ -291,15 +282,6 @@ const MyBookings = () => {
           workerId={reviewingBooking.worker_id}
           workerName={reviewingBooking.worker_name}
           serviceName={reviewingBooking.service_name}
-          onSuccess={fetchBookings}
-        />
-      )}
-
-      {user && (
-        <ProfileEditModal
-          userId={user.id}
-          open={isEditingProfile}
-          onClose={() => setIsEditingProfile(false)}
           onSuccess={fetchBookings}
         />
       )}

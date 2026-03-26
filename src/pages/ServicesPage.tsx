@@ -25,6 +25,8 @@ interface ProviderData {
   full_address?: string;
   phone?: string;
   email?: string;
+  latitude?: number;
+  longitude?: number;
   workers?: Array<{
     id: string;
     name: string;
@@ -43,7 +45,24 @@ interface ProviderData {
   }>;
 }
 
-const sortOptions = ["Rating", "Price", "Distance"];
+const sortOptions = ["Distance", "Rating", "Price"];
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+};
+
+const deg2rad = (deg: number) => {
+  return deg * (Math.PI / 180);
+};
 
 const ProviderProfileModal = ({ provider, onClose, open }: { provider: ProviderData; onClose: () => void; open: boolean }) => (
   <AnimatePresence>
@@ -234,7 +253,7 @@ const ProviderCard = ({
             <Briefcase className="w-3.5 h-3.5" /> {provider.jobs} jobs
           </span>
           <span className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5" /> {provider.city}
+            <MapPin className="w-3.5 h-3.5" /> {provider.city} ({provider.distance} km)
           </span>
         </div>
 
@@ -325,7 +344,7 @@ const ProviderCard = ({
 const ServicesPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [sortBy, setSortBy] = useState("Rating");
+  const [sortBy, setSortBy] = useState("Distance");
   const [providers, setProviders] = useState<ProviderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState<ProviderData | null>(null);
@@ -347,7 +366,7 @@ const ServicesPage = () => {
       // Get user's city
       const { data: userProfile } = await supabase
         .from("profiles")
-        .select("city")
+        .select("city, latitude, longitude")
         .eq("user_id", user.id)
         .single();
 
@@ -371,7 +390,7 @@ const ServicesPage = () => {
 
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("user_id, full_name, email, phone, house_no, area, city")
+          .select("user_id, full_name, email, phone, house_no, area, city, latitude, longitude")
           .in("user_id", allUserIds);
 
         const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
@@ -380,6 +399,25 @@ const ServicesPage = () => {
           .map((p) => {
             const providerProfile = profileMap.get(p.user_id);
             const workerMap = new Map(p.workers?.map((w: any) => [w.id, w.name]) || []);
+            
+            // Calculate distance if coordinates are available
+            let distance = Math.round(Math.random() * 50 + 5) / 10; // Fallback to mock
+            const pLat = providerProfile?.latitude;
+            const pLon = providerProfile?.longitude;
+            
+            const currentLat = userProfile.latitude;
+            const currentLon = userProfile.longitude;
+
+            if (currentLat && currentLon && pLat && pLon) {
+              distance = calculateDistance(
+                Number(currentLat),
+                Number(currentLon),
+                Number(pLat),
+                Number(pLon)
+              );
+              distance = Math.round(distance * 10) / 10;
+            }
+
             return {
               id: p.id,
               name: providerProfile?.full_name || p.avatar_initials,
@@ -387,13 +425,15 @@ const ServicesPage = () => {
               rating: Number(p.rating),
               jobs: p.completed_jobs,
               price: p.base_price,
-              distance: Math.round(Math.random() * 50 + 5) / 10,
+              distance,
               experience: p.experience,
               avatar: p.avatar_initials,
               city: providerProfile?.city || "",
               full_address: providerProfile ? `${providerProfile.house_no}, ${providerProfile.area}, ${providerProfile.city}` : undefined,
               phone: providerProfile?.phone,
               email: providerProfile?.email,
+              latitude: pLat,
+              longitude: pLon,
               workers: p.workers || [],
               reviews: (p.reviews || []).map((r: any) => ({
                 ...r,

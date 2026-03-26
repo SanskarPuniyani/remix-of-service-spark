@@ -1,22 +1,33 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, Briefcase, MapPin, DollarSign, Clock, ArrowRight, Loader2 } from "lucide-react";
+import { Zap, Briefcase, MapPin, DollarSign, Clock, ArrowRight, Loader2, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
+import { LocationPicker } from "@/components/LocationPicker";
 
 const serviceCategories = [
-  "Electrician", "Plumber", "Deep Cleaning", "Beautician",
-  "Painter", "Pest Control", "Carpenter", "AC Repair",
+  "Electrician",
+  "Plumber",
+  "Electronics",
+  "Painting",
+  "Deep Cleaning",
+  "Pest Control",
+  "Beautician",
+  "Barber",
+  "Massage",
+  "Car Wash",
+  "Vehicle Repair",
+  "Movers"
 ];
 
 const experienceOptions = ["< 1 year", "1-3 years", "3-5 years", "5-10 years", "10+ years"];
 
 const ProviderSetup = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading, role } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -26,9 +37,11 @@ const ProviderSetup = () => {
     experience: "1-3 years",
     service_area: "",
     avatar_initials: "",
+    latitude: undefined as number | undefined,
+    longitude: undefined as number | undefined,
   });
 
-  const update = (key: string, value: string | number) =>
+  const update = (key: string, value: string | number | undefined) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,9 +49,39 @@ const ProviderSetup = () => {
     if (!user) return;
 
     setLoading(true);
+
+    // Check if user is already a worker
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profile?.role === "worker") {
+      toast({ title: "Operation Failed", description: "You are already a worker. Workers cannot become providers.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
     const initials = form.avatar_initials || form.service_name.slice(0, 2).toUpperCase();
 
-    const { error } = await supabase.from("providers").insert({
+    let lat = form.latitude;
+    let lon = form.longitude;
+
+    // Geocode if address is provided and coordinates are still missing
+    if (form.service_area && (!lat || !lon)) {
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(form.service_area)}&limit=1`);
+        const data = await response.json();
+        if (data && data[0]) {
+          lat = parseFloat(data[0].lat);
+          lon = parseFloat(data[0].lon);
+        }
+      } catch (err) {
+        console.error("Geocoding failed:", err);
+      }
+    }
+
+    const { error: providerError } = await supabase.from("providers").insert({
       user_id: user.id,
       service_category: form.service_category,
       service_name: form.service_name,
@@ -48,25 +91,47 @@ const ProviderSetup = () => {
       avatar_initials: initials,
     });
 
-    if (!error) {
-      // Ensure profile role is updated to provider if it wasn't already
+    if (!providerError) {
+      // Ensure profile role is updated to provider and coordinates are saved
       await supabase
         .from("profiles")
-        .update({ role: "provider" })
+        .update({ 
+          role: "provider",
+          latitude: lat,
+          longitude: lon
+        })
         .eq("user_id", user.id);
     }
 
     setLoading(false);
-    if (error) {
-      toast({ title: "Setup Failed", description: error.message, variant: "destructive" });
+    if (providerError) {
+      toast({ title: "Setup Failed", description: providerError.message, variant: "destructive" });
     } else {
       toast({ title: "Service added!", description: "Your new service is now live!" });
       navigate("/provider/dashboard");
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (!user) {
     navigate("/auth?mode=provider");
+    return null;
+  }
+
+  if (role === "worker") {
+    toast({ 
+      title: "Access Denied", 
+      description: "Workers cannot register as providers. Please use your worker dashboard.",
+      variant: "destructive"
+    });
+    navigate("/worker/dashboard");
     return null;
   }
 
@@ -128,26 +193,21 @@ const ProviderSetup = () => {
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
                   <Briefcase className="w-4 h-4 text-primary" /> Service Category
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {serviceCategories.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => update("service_category", cat)}
-                      className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-300 ${
-                        form.service_category === cat
-                          ? "text-primary-foreground shadow-lg"
-                          : "bg-secondary/50 border border-border/30 text-muted-foreground hover:text-foreground hover:bg-secondary"
-                      }`}
-                      style={
-                        form.service_category === cat
-                          ? { background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))", boxShadow: "0 4px 15px hsl(var(--primary) / 0.3)" }
-                          : {}
-                      }
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                <div className="relative group">
+                  <select
+                    required
+                    value={form.service_category}
+                    onChange={(e) => update("service_category", e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border/30 text-foreground appearance-none focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-sm cursor-pointer"
+                  >
+                    <option value="" disabled className="bg-card text-muted-foreground">Select a category</option>
+                    {serviceCategories.map((cat) => (
+                      <option key={cat} value={cat} className="bg-card text-foreground">
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none transition-transform group-hover:scale-110" />
                 </div>
               </div>
 
@@ -198,15 +258,30 @@ const ProviderSetup = () => {
               {/* Service Area */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary" /> Service Area
+                  <MapPin className="w-4 h-4 text-primary" /> Service Area (City)
                 </label>
                 <input
                   type="text"
                   required
                   value={form.service_area}
                   onChange={(e) => update("service_area", e.target.value)}
-                  placeholder="e.g. Mumbai, Delhi NCR"
+                  placeholder="e.g. Mumbai"
                   className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border/30 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-sm"
+                />
+              </div>
+
+              {/* Pinpoint Location Map */}
+              <div className="space-y-3 pt-2">
+                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" /> Pinpoint Exact Business Location
+                </label>
+                <LocationPicker 
+                  initialLat={form.latitude}
+                  initialLon={form.longitude}
+                  onLocationSelect={(lat, lon) => {
+                    update("latitude", lat);
+                    update("longitude", lon);
+                  }}
                 />
               </div>
 

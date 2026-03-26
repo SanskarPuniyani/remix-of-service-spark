@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 import Navbar from "@/components/landing/Navbar";
-import { ProfileEditModal } from "@/components/ProfileEditModal";
 
 type Booking = {
   id: string;
@@ -58,7 +57,7 @@ const statusColors: Record<string, string> = {
 };
 
 const ProviderDashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -72,7 +71,6 @@ const ProviderDashboard = () => {
   const [newWorkerPhone, setNewWorkerPhone] = useState("");
   const [newWorkerEmail, setNewWorkerEmail] = useState("");
   const [isAddingWorker, setIsAddingWorker] = useState(false);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const deleteWorker = async (workerId: string) => {
     const { error } = await supabase
@@ -89,12 +87,14 @@ const ProviderDashboard = () => {
   };
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate("/auth?mode=provider");
       return;
     }
-    fetchData();
-  }, [user]);
+    if (user) {
+      fetchData();
+    }
+  }, [user, authLoading]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -393,16 +393,6 @@ const ProviderDashboard = () => {
             </motion.div>
 
             <div className="flex items-center gap-3">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsEditingProfile(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/50 border border-border/50 text-sm font-semibold hover:bg-secondary transition-all"
-              >
-                <Settings className="w-4 h-4" />
-                Edit Profile
-              </motion.button>
-
               {/* Service Switcher Dropdown */}
               <div className="relative group">
                 <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/40 border border-border/30 text-sm font-medium hover:bg-secondary/60 transition-all">
@@ -734,15 +724,6 @@ const ProviderDashboard = () => {
           </div>
         </div>
       </div>
-
-      {user && (
-        <ProfileEditModal
-          userId={user.id}
-          open={isEditingProfile}
-          onClose={() => setIsEditingProfile(false)}
-          onSuccess={fetchData}
-        />
-      )}
     </PageTransition>
   );
 };

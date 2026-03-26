@@ -50,6 +50,12 @@ const DepthCard = ({
   const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-12, 12]), { stiffness: 150, damping: 20 });
   const glowX = useSpring(useTransform(mouseX, [-0.5, 0.5], [0, 100]), { stiffness: 150, damping: 20 });
   const glowY = useSpring(useTransform(mouseY, [-0.5, 0.5], [0, 100]), { stiffness: 150, damping: 20 });
+
+  const background = useTransform(
+    [glowX, glowY],
+    ([x, y]) => `radial-gradient(circle at ${x}% ${y}%, hsl(var(${accent}) / 0.2), transparent 60%)`
+  );
+
   const brightness = useMotionValue(0);
   const smoothBrightness = useSpring(brightness, { stiffness: 200, damping: 30 });
 
@@ -89,7 +95,7 @@ const DepthCard = ({
         className="absolute inset-0 rounded-2xl pointer-events-none"
         style={{
           opacity: smoothBrightness,
-          background: `radial-gradient(circle at calc(${glowX}%) calc(${glowY}%), hsl(var(${accent}) / 0.2), transparent 60%)`,
+          background,
         }}
       />
       {/* Depth layer */}

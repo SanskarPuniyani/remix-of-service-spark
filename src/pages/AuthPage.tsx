@@ -7,8 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 
 const serviceCategories = [
-  "Electrician", "Plumber", "Deep Cleaning", "Beautician",
-  "Painter", "Pest Control", "Carpenter", "AC Repair",
+  "Electrician",
+  "Plumber",
+  "Electronics",
+  "Painting",
+  "Deep Cleaning",
+  "Pest Control",
+  "Beautician",
+  "Barber",
+  "Massage",
+  "Car Wash",
+  "Vehicle Repair",
+  "Movers"
 ];
 
 /* ── Floating Label Input ── */

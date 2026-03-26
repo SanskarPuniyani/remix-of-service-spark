@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, User, Phone, Home, Building, MapPin, Loader2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { LocationPicker } from "./LocationPicker";
 
 interface Profile {
   full_name: string;
@@ -10,6 +11,8 @@ interface Profile {
   house_no: string;
   area: string;
   city: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const ProfileEditModal = ({ 
@@ -40,7 +43,7 @@ export const ProfileEditModal = ({
         setFetching(true);
         const { data, error } = await supabase
           .from("profiles")
-          .select("full_name, phone, house_no, area, city")
+          .select("full_name, phone, house_no, area, city, latitude, longitude")
           .eq("user_id", userId)
           .single();
         
@@ -50,7 +53,9 @@ export const ProfileEditModal = ({
             phone: data.phone || "",
             house_no: data.house_no || "",
             area: data.area || "",
-            city: data.city || ""
+            city: data.city || "",
+            latitude: data.latitude,
+            longitude: data.longitude
           });
         }
         setFetching(false);
@@ -63,6 +68,24 @@ export const ProfileEditModal = ({
     e.preventDefault();
     setLoading(true);
 
+    let lat = form.latitude;
+    let lon = form.longitude;
+
+    // Geocode if coordinates are still missing but address is present
+    if (!lat || !lon) {
+      try {
+        const query = `${form.house_no}, ${form.area}, ${form.city}`;
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+        const data = await response.json();
+        if (data && data[0]) {
+          lat = parseFloat(data[0].lat);
+          lon = parseFloat(data[0].lon);
+        }
+      } catch (err) {
+        console.error("Geocoding failed:", err);
+      }
+    }
+
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -70,7 +93,9 @@ export const ProfileEditModal = ({
         phone: form.phone,
         house_no: form.house_no,
         area: form.area,
-        city: form.city
+        city: form.city,
+        latitude: lat,
+        longitude: lon
       })
       .eq("user_id", userId);
 
@@ -166,6 +191,21 @@ export const ProfileEditModal = ({
                       onChange={(e) => setForm({ ...form, city: e.target.value })}
                       placeholder="City"
                       className="w-full h-12 pl-11 pr-4 rounded-xl bg-secondary/50 border border-border focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+                  
+                  {/* Pinpoint Location Map */}
+                  <div className="space-y-3 pt-2">
+                    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" /> Pinpoint Exact Location
+                    </label>
+                    <LocationPicker 
+                      initialLat={form.latitude}
+                      initialLon={form.longitude}
+                      fallbackCity={form.city}
+                      onLocationSelect={(lat, lon) => {
+                        setForm(prev => ({ ...prev, latitude: lat, longitude: lon }));
+                      }}
                     />
                   </div>
                 </div>
