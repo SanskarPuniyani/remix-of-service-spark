@@ -25,6 +25,8 @@ type Booking = {
     area: string;
     city: string;
   };
+  customer_latitude?: number;
+  customer_longitude?: number;
 };
 
 const statusColors: Record<string, string> = {
