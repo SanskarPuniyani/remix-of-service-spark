@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Briefcase, Clock, CheckCircle, XCircle, LogOut, Calendar, MapPin, Phone, Settings, UserPlus, Map } from "lucide-react";
+import { Briefcase, Clock, CheckCircle, XCircle, LogOut, Calendar, MapPin, Phone, Settings, UserPlus, MapPinned } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
