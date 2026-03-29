@@ -434,6 +434,55 @@ const WorkerDashboard = () => {
           ) : null}
         </div>
       </div>
+
+      {/* Job Location Map Modal */}
+      <AnimatePresence>
+        {viewingMapBooking && viewingMapBooking.customer_latitude && viewingMapBooking.customer_longitude && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setViewingMapBooking(null)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-card border border-border shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-border/50 px-6 py-4">
+                <div>
+                  <h3 className="font-display text-lg font-bold">Job Location</h3>
+                  <p className="text-sm text-muted-foreground">{viewingMapBooking.customer_name} · {viewingMapBooking.service_name}</p>
+                </div>
+                <button onClick={() => setViewingMapBooking(null)} className="p-2 rounded-xl hover:bg-secondary transition-colors">
+                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="p-6">
+                <LocationPicker
+                  initialLat={viewingMapBooking.customer_latitude}
+                  initialLon={viewingMapBooking.customer_longitude}
+                  onLocationSelect={() => {}}
+                />
+                {viewingMapBooking.customer_address && (
+                  <div className="mt-4 p-4 rounded-xl bg-secondary/30 border border-border/50 flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {viewingMapBooking.customer_address.house_no}, {viewingMapBooking.customer_address.area}, {viewingMapBooking.customer_address.city}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{viewingMapBooking.booking_date} at {viewingMapBooking.booking_time}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 };
