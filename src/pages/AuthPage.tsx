@@ -127,10 +127,7 @@ const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [role, setRole] = useState<"customer" | "provider" | "worker">(
-    searchParams.get("role") === "worker" ? "worker" : 
-    searchParams.get("mode") === "provider" ? "provider" : "customer"
-  );
+  const role = "customer";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
