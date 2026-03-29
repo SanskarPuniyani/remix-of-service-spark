@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import { Search, MapPin, Loader2 } from "lucide-react";
+import { Search, MapPin, Loader2, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import "leaflet/dist/leaflet.css";
 
@@ -19,6 +19,8 @@ interface LocationPickerProps {
   initialLon?: number;
   fallbackCity?: string;
   onLocationSelect: (lat: number, lon: number, address?: string) => void;
+  showSaveButton?: boolean;
+  onSave?: (lat: number, lon: number, address?: string) => void;
 }
 
 // Component to handle map center updates
@@ -40,7 +42,7 @@ function MapEvents({ onMapClick }: { onMapClick: (lat: number, lon: number) => v
   return null;
 }
 
-export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocationSelect }: LocationPickerProps) => {
+export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocationSelect, showSaveButton, onSave }: LocationPickerProps) => {
   const [position, setPosition] = useState<L.LatLngExpression | null>(
     initialLat && initialLon ? [initialLat, initialLon] : [19.0760, 72.8777]
   );
@@ -49,6 +51,7 @@ export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocatio
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
+  const [currentAddress, setCurrentAddress] = useState<string>("");
 
   // Update position if initial coordinates change or geocode fallback city
   useEffect(() => {
@@ -106,6 +109,7 @@ export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocatio
     const newPos: L.LatLngExpression = [lat, lon];
     setPosition(newPos);
     setSearchQuery(result.display_name);
+    setCurrentAddress(result.display_name);
     setShowResults(false);
     onLocationSelect(lat, lon, result.display_name);
   };
@@ -198,6 +202,17 @@ export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocatio
           )}
         </MapContainer>
       </motion.div>
+      {showSaveButton && onSave && position && (
+        <button
+          onClick={() => {
+            const pos = position as [number, number];
+            onSave(pos[0], pos[1], currentAddress || undefined);
+          }}
+          className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+        >
+          <Save className="w-4 h-4" /> Save This Location
+        </button>
+      )}
       <p className="text-[10px] text-muted-foreground text-center italic">
         Tip: Drag the marker or click on the map to pinpoint your exact location.
       </p>

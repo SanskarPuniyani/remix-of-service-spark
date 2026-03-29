@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          area: string | null
+          city: string | null
+          created_at: string | null
+          full_address: string
+          house_no: string | null
+          id: string
+          is_default: boolean | null
+          label: string | null
+          latitude: number
+          longitude: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          area?: string | null
+          city?: string | null
+          created_at?: string | null
+          full_address: string
+          house_no?: string | null
+          id?: string
+          is_default?: boolean | null
+          label?: string | null
+          latitude: number
+          longitude: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          area?: string | null
+          city?: string | null
+          created_at?: string | null
+          full_address?: string
+          house_no?: string | null
+          id?: string
+          is_default?: boolean | null
+          label?: string | null
+          latitude?: number
+          longitude?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           base_price: number
@@ -28,6 +73,7 @@ export type Database = {
           status: string
           urgency: string
           user_id: string
+          worker_id: string | null
         }
         Insert: {
           base_price: number
@@ -42,6 +88,7 @@ export type Database = {
           status?: string
           urgency?: string
           user_id: string
+          worker_id?: string | null
         }
         Update: {
           base_price?: number
@@ -56,6 +103,7 @@ export type Database = {
           status?: string
           urgency?: string
           user_id?: string
+          worker_id?: string | null
         }
         Relationships: [
           {
@@ -69,24 +117,54 @@ export type Database = {
       }
       profiles: {
         Row: {
+          area: string | null
+          city: string | null
           created_at: string
+          email: string | null
+          experience: string | null
           full_name: string | null
+          hourly_rate: number | null
+          house_no: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
+          phone: string | null
           role: string
+          service_category: string | null
           user_id: string
         }
         Insert: {
+          area?: string | null
+          city?: string | null
           created_at?: string
+          email?: string | null
+          experience?: string | null
           full_name?: string | null
+          hourly_rate?: number | null
+          house_no?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
           role?: string
+          service_category?: string | null
           user_id: string
         }
         Update: {
+          area?: string | null
+          city?: string | null
           created_at?: string
+          email?: string | null
+          experience?: string | null
           full_name?: string | null
+          hourly_rate?: number | null
+          house_no?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
           role?: string
+          service_category?: string | null
           user_id?: string
         }
         Relationships: []
@@ -145,6 +223,9 @@ export type Database = {
           provider_id: string
           rating: number
           user_id: string
+          worker_comment: string | null
+          worker_id: string | null
+          worker_rating: number | null
         }
         Insert: {
           booking_id: string
@@ -154,6 +235,9 @@ export type Database = {
           provider_id: string
           rating: number
           user_id: string
+          worker_comment?: string | null
+          worker_id?: string | null
+          worker_rating?: number | null
         }
         Update: {
           booking_id?: string
@@ -163,6 +247,9 @@ export type Database = {
           provider_id?: string
           rating?: number
           user_id?: string
+          worker_comment?: string | null
+          worker_id?: string | null
+          worker_rating?: number | null
         }
         Relationships: [
           {
@@ -174,6 +261,56 @@ export type Database = {
           },
           {
             foreignKeyName: "reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workers: {
+        Row: {
+          completed_jobs: number | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          provider_id: string
+          rating: number | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_jobs?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          provider_id: string
+          rating?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_jobs?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          provider_id?: string
+          rating?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workers_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"

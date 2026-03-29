@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Briefcase, Clock, CheckCircle, XCircle, LogOut, Calendar, MapPin, Phone, Settings, UserPlus } from "lucide-react";
+import { Briefcase, Clock, CheckCircle, XCircle, LogOut, Calendar, MapPin, Phone, Settings, UserPlus, MapPinned } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 import Navbar from "@/components/landing/Navbar";
+import { LocationPicker } from "@/components/LocationPicker";
 
 type Booking = {
   id: string;
@@ -25,6 +26,8 @@ type Booking = {
     area: string;
     city: string;
   };
+  customer_latitude?: number;
+  customer_longitude?: number;
 };
 
 const statusColors: Record<string, string> = {
@@ -43,6 +46,7 @@ const WorkerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"all" | "pending" | "confirmed" | "completed">("all");
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [viewingMapBooking, setViewingMapBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -100,7 +104,7 @@ const WorkerDashboard = () => {
       const customerIds = [...new Set(bookingData.map((b) => b.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name, phone, house_no, area, city")
+        .select("user_id, full_name, phone, house_no, area, city, latitude, longitude")
         .in("user_id", customerIds);
 
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
@@ -116,7 +120,9 @@ const WorkerDashboard = () => {
               house_no: profile.house_no,
               area: profile.area,
               city: profile.city
-            } : undefined
+            } : undefined,
+            customer_latitude: profile?.latitude ? Number(profile.latitude) : undefined,
+            customer_longitude: profile?.longitude ? Number(profile.longitude) : undefined,
           };
         })
       );
@@ -381,6 +387,15 @@ const WorkerDashboard = () => {
                           </div>
 
                           <div className="flex flex-row md:flex-col gap-2 justify-end">
+                            {booking.customer_latitude && booking.customer_longitude && (
+                              <button
+                                onClick={() => setViewingMapBooking(booking)}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent/10 text-accent font-medium text-sm hover:bg-accent/20 transition-all"
+                              >
+                                <MapPinned className="w-4 h-4" />
+                                View Location
+                              </button>
+                            )}
                             {booking.status === "confirmed" && (
                               <button
                                 onClick={() => updateBookingStatus(booking.id, "completed")}
@@ -419,6 +434,55 @@ const WorkerDashboard = () => {
           ) : null}
         </div>
       </div>
+
+      {/* Job Location Map Modal */}
+      <AnimatePresence>
+        {viewingMapBooking && viewingMapBooking.customer_latitude && viewingMapBooking.customer_longitude && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setViewingMapBooking(null)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-card border border-border shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-border/50 px-6 py-4">
+                <div>
+                  <h3 className="font-display text-lg font-bold">Job Location</h3>
+                  <p className="text-sm text-muted-foreground">{viewingMapBooking.customer_name} · {viewingMapBooking.service_name}</p>
+                </div>
+                <button onClick={() => setViewingMapBooking(null)} className="p-2 rounded-xl hover:bg-secondary transition-colors">
+                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="p-6">
+                <LocationPicker
+                  initialLat={viewingMapBooking.customer_latitude}
+                  initialLon={viewingMapBooking.customer_longitude}
+                  onLocationSelect={() => {}}
+                />
+                {viewingMapBooking.customer_address && (
+                  <div className="mt-4 p-4 rounded-xl bg-secondary/30 border border-border/50 flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {viewingMapBooking.customer_address.house_no}, {viewingMapBooking.customer_address.area}, {viewingMapBooking.customer_address.city}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{viewingMapBooking.booking_date} at {viewingMapBooking.booking_time}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 };

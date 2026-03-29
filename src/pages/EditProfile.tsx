@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Phone, Home, Building, MapPin, Loader2, Save, ArrowLeft, Mail, Shield, Briefcase } from "lucide-react";
+import { User, Phone, Home, Building, MapPin, Loader2, Save, ArrowLeft, Mail, Shield, Briefcase, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";

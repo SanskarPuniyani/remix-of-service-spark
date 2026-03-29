@@ -70,25 +70,22 @@ const WorkerSetup = () => {
       return;
     }
 
-    const { error: workerError } = await supabase.from("workers").insert({
-      user_id: user.id,
-      name: form.name,
-      skills: form.skills.split(",").map(s => s.trim()),
-      experience: form.experience,
-      is_active: true,
-      rating: 5.0
-    });
+    // Update profile with worker info - providers will add them via email later
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ 
+        role: "worker",
+        service_category: form.service_category,
+        experience: form.experience,
+        full_name: form.name || undefined
+      })
+      .eq("user_id", user.id);
 
-    if (!workerError) {
-      await supabase
-        .from("profiles")
-        .update({ role: "worker" })
-        .eq("user_id", user.id);
-      
-      toast({ title: "Registration Successful!", description: "You are now registered as a worker." });
+    if (!profileError) {
+      toast({ title: "Registration Successful!", description: "You are now registered as a worker. Providers can now find and add you." });
       navigate("/worker/dashboard");
     } else {
-      toast({ title: "Setup Failed", description: workerError.message, variant: "destructive" });
+      toast({ title: "Setup Failed", description: profileError.message, variant: "destructive" });
     }
     setLoading(false);
   };

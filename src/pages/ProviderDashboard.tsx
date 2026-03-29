@@ -46,7 +46,7 @@ type Worker = {
   phone: string;
   is_active: boolean;
   user_id?: string;
-  status: "pending" | "accepted";
+  status: string;
 };
 
 const statusColors: Record<string, string> = {
