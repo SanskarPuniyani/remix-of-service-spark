@@ -387,6 +387,15 @@ const WorkerDashboard = () => {
                           </div>
 
                           <div className="flex flex-row md:flex-col gap-2 justify-end">
+                            {booking.customer_latitude && booking.customer_longitude && (
+                              <button
+                                onClick={() => setViewingMapBooking(booking)}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent/10 text-accent font-medium text-sm hover:bg-accent/20 transition-all"
+                              >
+                                <MapPinned className="w-4 h-4" />
+                                View Location
+                              </button>
+                            )}
                             {booking.status === "confirmed" && (
                               <button
                                 onClick={() => updateBookingStatus(booking.id, "completed")}
