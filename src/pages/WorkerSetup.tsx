@@ -70,15 +70,18 @@ const WorkerSetup = () => {
       return;
     }
 
-    const { error: workerError } = await supabase.from("workers").insert({
-      provider_id: "00000000-0000-0000-0000-000000000000", // placeholder, provider will claim
-      user_id: user.id,
-      name: form.name,
-      phone: "",
-      is_active: true,
-    } as any);
+    // Update profile with worker info - providers will add them via email later
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ 
+        role: "worker",
+        service_category: form.service_category,
+        experience: form.experience,
+        full_name: form.name || undefined
+      })
+      .eq("user_id", user.id);
 
-    if (!workerError) {
+    const workerError = profileError;
       await supabase
         .from("profiles")
         .update({ role: "worker" })
