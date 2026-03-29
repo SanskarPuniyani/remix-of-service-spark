@@ -19,6 +19,8 @@ interface LocationPickerProps {
   initialLon?: number;
   fallbackCity?: string;
   onLocationSelect: (lat: number, lon: number, address?: string) => void;
+  showSaveButton?: boolean;
+  onSave?: (lat: number, lon: number, address?: string) => void;
 }
 
 // Component to handle map center updates
