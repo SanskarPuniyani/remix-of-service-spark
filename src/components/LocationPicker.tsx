@@ -42,7 +42,7 @@ function MapEvents({ onMapClick }: { onMapClick: (lat: number, lon: number) => v
   return null;
 }
 
-export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocationSelect }: LocationPickerProps) => {
+export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocationSelect, showSaveButton, onSave }: LocationPickerProps) => {
   const [position, setPosition] = useState<L.LatLngExpression | null>(
     initialLat && initialLon ? [initialLat, initialLon] : [19.0760, 72.8777]
   );
@@ -51,6 +51,7 @@ export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocatio
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
+  const [currentAddress, setCurrentAddress] = useState<string>("");
 
   // Update position if initial coordinates change or geocode fallback city
   useEffect(() => {
