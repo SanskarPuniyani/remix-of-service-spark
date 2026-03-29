@@ -294,6 +294,18 @@ const Navbar = () => {
                     {hasWorkerRecord && role !== "worker" && <DropdownMenuItem onClick={() => handleSwitchView("worker")} className="rounded-xl px-3 py-2.5 cursor-pointer"><div className="flex items-center gap-3"><LayoutDashboard className="w-4 h-4 text-accent" /><span className="font-medium">Switch to Worker View</span></div></DropdownMenuItem>}
                     {role === "provider" && <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer bg-primary/5"><Link to="/provider/dashboard" className="flex items-center gap-3"><Zap className="w-4 h-4 text-primary" /><span className="font-medium">Provider Dashboard</span></Link></DropdownMenuItem>}
                     {role === "worker" && <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer bg-accent/5"><Link to="/worker/dashboard" className="flex items-center gap-3"><Zap className="w-4 h-4 text-accent" /><span className="font-medium">Worker Dashboard</span></Link></DropdownMenuItem>}
+                    {hasProviderRecord && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleRevokeRole("provider")} className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5"><div className="flex items-center gap-3"><XCircle className="w-4 h-4" /><span className="font-medium">Revoke Provider Role</span></div></DropdownMenuItem>
+                      </>
+                    )}
+                    {hasWorkerRecord && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleRevokeRole("worker")} className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5"><div className="flex items-center gap-3"><XCircle className="w-4 h-4" /><span className="font-medium">Revoke Worker Role</span></div></DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5"><div className="flex items-center gap-3"><LogOut className="w-4 h-4" /><span className="font-medium">Sign Out</span></div></DropdownMenuItem>
                   </DropdownMenuContent>
