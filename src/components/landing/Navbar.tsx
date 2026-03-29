@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Zap, LogOut, MapPin, User as UserIcon, Settings, Shield, Briefcase, Plus, Trash2, Check, LayoutDashboard, UserCircle, Phone } from "lucide-react";
+import { Menu, X, Zap, LogOut, MapPin, User as UserIcon, Settings, Shield, Briefcase, Plus, Trash2, Check, LayoutDashboard, UserCircle, Phone, XCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -97,6 +97,31 @@ const Navbar = () => {
       else if (targetRole === "worker") navigate("/worker/dashboard");
     } catch (error) {
       toast({ title: "Switch Failed", description: "Could not change role. Please try again.", variant: "destructive" });
+    }
+  };
+
+  const handleRevokeRole = async (revokeRole: "provider" | "worker") => {
+    if (!user) return;
+    try {
+      if (revokeRole === "provider") {
+        // Delete all provider records for this user
+        const { data: providerRecords } = await supabase.from("providers").select("id").eq("user_id", user.id);
+        if (providerRecords) {
+          for (const p of providerRecords) {
+            await supabase.from("workers").delete().eq("provider_id", p.id);
+            await supabase.from("providers").delete().eq("id", p.id);
+          }
+        }
+      } else {
+        await supabase.from("workers").delete().eq("user_id", user.id);
+      }
+      await switchRole("customer");
+      setHasProviderRecord(false);
+      setHasWorkerRecord(false);
+      toast({ title: "Role Revoked", description: `You are now a customer. You can become a ${revokeRole} again anytime.` });
+      navigate("/");
+    } catch (error) {
+      toast({ title: "Failed to revoke role", variant: "destructive" });
     }
   };
 
@@ -200,21 +225,11 @@ const Navbar = () => {
                 </Tooltip>
 
                 <div className="flex items-center gap-2">
-                  {role !== "provider" && !hasProviderRecord && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link to="/provider-setup"><Button variant="outline" size="sm" className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9">Become Provider</Button></Link>
-                      </TooltipTrigger>
-                      {role === "worker" && <TooltipContent className="bg-destructive text-destructive-foreground border-none"><p className="text-xs">Note: You will lose your Worker role if you become a Provider.</p></TooltipContent>}
-                    </Tooltip>
+                  {role !== "provider" && !hasProviderRecord && !hasWorkerRecord && (
+                    <Link to="/provider-setup"><Button variant="outline" size="sm" className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9">Become Provider</Button></Link>
                   )}
-                  {role !== "worker" && !hasWorkerRecord && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link to="/worker-setup"><Button variant="outline" size="sm" className="rounded-full border-accent/20 hover:bg-accent/5 text-accent h-9">Become Worker</Button></Link>
-                      </TooltipTrigger>
-                      {role === "provider" && <TooltipContent className="bg-destructive text-destructive-foreground border-none"><p className="text-xs">Note: You will lose your Provider role if you become a Worker.</p></TooltipContent>}
-                    </Tooltip>
+                  {role !== "worker" && !hasWorkerRecord && !hasProviderRecord && (
+                    <Link to="/worker-setup"><Button variant="outline" size="sm" className="rounded-full border-accent/20 hover:bg-accent/5 text-accent h-9">Become Worker</Button></Link>
                   )}
                   {hasProviderRecord && role !== "provider" && (
                     <Button variant="outline" size="sm" onClick={() => handleSwitchView("provider")} className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9 gap-2"><Zap className="w-3 h-3" /> Switch to Provider</Button>
@@ -269,6 +284,18 @@ const Navbar = () => {
                     {hasWorkerRecord && role !== "worker" && <DropdownMenuItem onClick={() => handleSwitchView("worker")} className="rounded-xl px-3 py-2.5 cursor-pointer"><div className="flex items-center gap-3"><LayoutDashboard className="w-4 h-4 text-accent" /><span className="font-medium">Switch to Worker View</span></div></DropdownMenuItem>}
                     {role === "provider" && <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer bg-primary/5"><Link to="/provider/dashboard" className="flex items-center gap-3"><Zap className="w-4 h-4 text-primary" /><span className="font-medium">Provider Dashboard</span></Link></DropdownMenuItem>}
                     {role === "worker" && <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer bg-accent/5"><Link to="/worker/dashboard" className="flex items-center gap-3"><Zap className="w-4 h-4 text-accent" /><span className="font-medium">Worker Dashboard</span></Link></DropdownMenuItem>}
+                    {hasProviderRecord && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleRevokeRole("provider")} className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5"><div className="flex items-center gap-3"><XCircle className="w-4 h-4" /><span className="font-medium">Revoke Provider Role</span></div></DropdownMenuItem>
+                      </>
+                    )}
+                    {hasWorkerRecord && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleRevokeRole("worker")} className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5"><div className="flex items-center gap-3"><XCircle className="w-4 h-4" /><span className="font-medium">Revoke Worker Role</span></div></DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5"><div className="flex items-center gap-3"><LogOut className="w-4 h-4" /><span className="font-medium">Sign Out</span></div></DropdownMenuItem>
                   </DropdownMenuContent>
@@ -314,6 +341,12 @@ const Navbar = () => {
                   <div className="mt-3 flex flex-col gap-2">
                     <Link to="/provider-setup" onClick={() => setOpen(false)} className="w-full"><Button variant="outline" size="sm" className="w-full rounded-xl border-primary/20 text-primary h-10">Become Provider</Button></Link>
                     <Link to="/worker-setup" onClick={() => setOpen(false)} className="w-full"><Button variant="outline" size="sm" className="w-full rounded-xl border-accent/20 text-accent h-10">Become Worker</Button></Link>
+                  </div>
+                )}
+                {(hasProviderRecord || hasWorkerRecord) && (
+                  <div className="mt-3 space-y-2">
+                    {hasProviderRecord && <Button variant="ghost" onClick={() => { handleRevokeRole("provider"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 text-destructive hover:bg-destructive/5"><XCircle className="w-4 h-4" /><span className="text-xs font-bold">REVOKE PROVIDER ROLE</span></Button>}
+                    {hasWorkerRecord && <Button variant="ghost" onClick={() => { handleRevokeRole("worker"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 text-destructive hover:bg-destructive/5"><XCircle className="w-4 h-4" /><span className="text-xs font-bold">REVOKE WORKER ROLE</span></Button>}
                   </div>
                 )}
               </div>
