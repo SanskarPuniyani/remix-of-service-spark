@@ -416,8 +416,8 @@ const ServicesPage = () => {
             const pLat = providerProfile?.latitude;
             const pLon = providerProfile?.longitude;
             
-            const currentLat = userProfile.latitude;
-            const currentLon = userProfile.longitude;
+            const currentLat = userLat;
+            const currentLon = userLon;
 
             if (currentLat && currentLon && pLat && pLon) {
               distance = calculateDistance(
