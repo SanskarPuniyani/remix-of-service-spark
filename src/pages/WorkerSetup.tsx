@@ -71,13 +71,12 @@ const WorkerSetup = () => {
     }
 
     const { error: workerError } = await supabase.from("workers").insert({
+      provider_id: "00000000-0000-0000-0000-000000000000", // placeholder, provider will claim
       user_id: user.id,
       name: form.name,
-      skills: form.skills.split(",").map(s => s.trim()),
-      experience: form.experience,
+      phone: "",
       is_active: true,
-      rating: 5.0
-    });
+    } as any);
 
     if (!workerError) {
       await supabase
