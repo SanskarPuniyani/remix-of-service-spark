@@ -343,6 +343,12 @@ const Navbar = () => {
                     <Link to="/worker-setup" onClick={() => setOpen(false)} className="w-full"><Button variant="outline" size="sm" className="w-full rounded-xl border-accent/20 text-accent h-10">Become Worker</Button></Link>
                   </div>
                 )}
+                {(hasProviderRecord || hasWorkerRecord) && (
+                  <div className="mt-3 space-y-2">
+                    {hasProviderRecord && <Button variant="ghost" onClick={() => { handleRevokeRole("provider"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 text-destructive hover:bg-destructive/5"><XCircle className="w-4 h-4" /><span className="text-xs font-bold">REVOKE PROVIDER ROLE</span></Button>}
+                    {hasWorkerRecord && <Button variant="ghost" onClick={() => { handleRevokeRole("worker"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 text-destructive hover:bg-destructive/5"><XCircle className="w-4 h-4" /><span className="text-xs font-bold">REVOKE WORKER ROLE</span></Button>}
+                  </div>
+                )}
               </div>
             )}
             {navLinks.map((link) => (
