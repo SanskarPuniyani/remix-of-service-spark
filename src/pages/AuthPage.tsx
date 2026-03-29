@@ -300,29 +300,7 @@ const AuthPage = () => {
                   {isLogin ? "Enter your credentials to continue" : "Fill in your details to get started"}
                 </p>
 
-                {/* Role selector (signup only) */}
-                {!isLogin && (
-                  <div className="flex gap-2 mb-6">
-                    {(["customer", "provider", "worker"] as const).map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => setRole(r)}
-                        className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                          role === r
-                            ? "text-white shadow-lg"
-                            : "bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.06]"
-                        }`}
-                        style={
-                          role === r
-                            ? { background: "linear-gradient(135deg, #8b5cf6, #3b82f6)", boxShadow: "0 4px 20px rgba(139,92,246,0.35)" }
-                            : {}
-                        }
-                      >
-                        {r === "customer" ? "Customer" : r === "provider" ? "Provider" : "Worker"}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* All users sign up as customers */}
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   {!isLogin && (
