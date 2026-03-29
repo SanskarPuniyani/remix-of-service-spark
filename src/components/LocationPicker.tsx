@@ -109,6 +109,7 @@ export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocatio
     const newPos: L.LatLngExpression = [lat, lon];
     setPosition(newPos);
     setSearchQuery(result.display_name);
+    setCurrentAddress(result.display_name);
     setShowResults(false);
     onLocationSelect(lat, lon, result.display_name);
   };
