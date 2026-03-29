@@ -194,13 +194,7 @@ const AuthPage = () => {
         toast({ title: "Signup Failed", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Account created!", description: "You are now signed in." });
-        if (role === "provider") {
-          navigate("/provider/setup");
-        } else if (role === "worker") {
-          navigate("/worker/dashboard");
-        } else {
-          navigate(redirectTo);
-        }
+        navigate(redirectTo);
       }
     }
   };
