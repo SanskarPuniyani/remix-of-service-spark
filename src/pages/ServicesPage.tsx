@@ -363,12 +363,23 @@ const ServicesPage = () => {
         return;
       }
 
-      // Get user's city
+      // Get user's city from profile
       const { data: userProfile } = await supabase
         .from("profiles")
         .select("city, latitude, longitude")
         .eq("user_id", user.id)
         .single();
+
+      // Also check for default address (takes priority for distance calc)
+      const { data: defaultAddr } = await supabase
+        .from("addresses")
+        .select("latitude, longitude")
+        .eq("user_id", user.id)
+        .eq("is_default", true)
+        .maybeSingle();
+
+      const userLat = defaultAddr?.latitude ?? userProfile?.latitude;
+      const userLon = defaultAddr?.longitude ?? userProfile?.longitude;
 
       if (!userProfile?.city) {
         setLoading(false);
