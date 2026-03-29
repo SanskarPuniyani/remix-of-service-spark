@@ -119,7 +119,9 @@ const WorkerDashboard = () => {
               house_no: profile.house_no,
               area: profile.area,
               city: profile.city
-            } : undefined
+            } : undefined,
+            customer_latitude: profile?.latitude ? Number(profile.latitude) : undefined,
+            customer_longitude: profile?.longitude ? Number(profile.longitude) : undefined,
           };
         })
       );
