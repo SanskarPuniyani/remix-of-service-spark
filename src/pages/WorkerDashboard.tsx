@@ -103,7 +103,7 @@ const WorkerDashboard = () => {
       const customerIds = [...new Set(bookingData.map((b) => b.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name, phone, house_no, area, city")
+        .select("user_id, full_name, phone, house_no, area, city, latitude, longitude")
         .in("user_id", customerIds);
 
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
