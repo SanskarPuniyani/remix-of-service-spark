@@ -371,10 +371,17 @@ const Navbar = () => {
                 )}
               </div>
             </TabsContent>
-            <TabsContent value="map" className="p-0 focus-visible:ring-0">
-              <div className="h-[450px] relative">
-                <LocationPicker initialLat={profile?.latitude} initialLon={profile?.longitude} fallbackCity={profile?.city} onLocationSelect={handleLocationSelect} />
-              </div>
+            <TabsContent value="map" className="p-6 focus-visible:ring-0">
+              <LocationPicker 
+                initialLat={profile?.latitude} 
+                initialLon={profile?.longitude} 
+                fallbackCity={profile?.city} 
+                onLocationSelect={(lat, lon, address) => {
+                  // Just updates the pin position, doesn't save yet
+                }}
+                showSaveButton={true}
+                onSave={handleLocationSelect}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>
