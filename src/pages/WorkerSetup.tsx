@@ -81,16 +81,11 @@ const WorkerSetup = () => {
       })
       .eq("user_id", user.id);
 
-    const workerError = profileError;
-      await supabase
-        .from("profiles")
-        .update({ role: "worker" })
-        .eq("user_id", user.id);
-      
-      toast({ title: "Registration Successful!", description: "You are now registered as a worker." });
+    if (!profileError) {
+      toast({ title: "Registration Successful!", description: "You are now registered as a worker. Providers can now find and add you." });
       navigate("/worker/dashboard");
     } else {
-      toast({ title: "Setup Failed", description: workerError.message, variant: "destructive" });
+      toast({ title: "Setup Failed", description: profileError.message, variant: "destructive" });
     }
     setLoading(false);
   };
