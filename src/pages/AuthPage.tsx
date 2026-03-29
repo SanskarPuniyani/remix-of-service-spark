@@ -158,15 +158,15 @@ const AuthPage = () => {
         toast({ title: "Login Failed", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Welcome back!" });
-        // Check if provider or worker → redirect accordingly
-        const userRole = data.user?.user_metadata?.role;
+        // Check profile role for redirect
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", data.user.id)
+          .single();
+        const userRole = profileData?.role;
         if (userRole === "provider") {
-          const { data: providerData } = await supabase
-            .from("providers")
-            .select("id")
-            .eq("user_id", data.user.id)
-            .maybeSingle();
-          navigate(providerData ? "/provider/dashboard" : "/provider/setup");
+          navigate("/provider/dashboard");
         } else if (userRole === "worker") {
           navigate("/worker/dashboard");
         } else {
