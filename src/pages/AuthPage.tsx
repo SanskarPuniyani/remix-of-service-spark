@@ -184,8 +184,7 @@ const AuthPage = () => {
             house_no: houseNo,
             area,
             city,
-            role,
-            service_category: role === "worker" ? serviceCategory : undefined 
+            role: "customer"
           },
           emailRedirectTo: window.location.origin,
         },
