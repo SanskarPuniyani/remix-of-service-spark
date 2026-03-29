@@ -315,29 +315,6 @@ const AuthPage = () => {
                         <FloatingInput icon={MapPin} label="City" value={city} onChange={setCity} required />
                       </div>
                       
-                      {role === "worker" && (
-                        <div className="space-y-2 mb-4">
-                          <label className="text-[10px] font-medium text-purple-400/80 ml-4 uppercase tracking-wider flex items-center gap-1.5">
-                            <Briefcase className="w-3 h-3" /> Select Your Service Category
-                          </label>
-                          <div className="grid grid-cols-2 gap-2 px-1">
-                            {serviceCategories.map((cat) => (
-                              <button
-                                key={cat}
-                                type="button"
-                                onClick={() => setServiceCategory(cat)}
-                                className={`py-2 px-3 rounded-xl text-[11px] font-semibold transition-all duration-300 border ${
-                                  serviceCategory === cat
-                                    ? "bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)]"
-                                    : "bg-white/[0.03] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.05]"
-                                }`}
-                              >
-                                {cat}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </>
                   )}
 
