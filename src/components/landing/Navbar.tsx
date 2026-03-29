@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Zap, LogOut, MapPin, User as UserIcon, Settings, Shield, Briefcase, Plus, Trash2, Check, LayoutDashboard, UserCircle, Phone } from "lucide-react";
+import { Menu, X, Zap, LogOut, MapPin, User as UserIcon, Settings, Shield, Briefcase, Plus, Trash2, Check, LayoutDashboard, UserCircle, Phone, XCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
