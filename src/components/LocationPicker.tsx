@@ -202,6 +202,17 @@ export const LocationPicker = ({ initialLat, initialLon, fallbackCity, onLocatio
           )}
         </MapContainer>
       </motion.div>
+      {showSaveButton && onSave && position && (
+        <button
+          onClick={() => {
+            const pos = position as [number, number];
+            onSave(pos[0], pos[1], currentAddress || undefined);
+          }}
+          className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+        >
+          <Save className="w-4 h-4" /> Save This Location
+        </button>
+      )}
       <p className="text-[10px] text-muted-foreground text-center italic">
         Tip: Drag the marker or click on the map to pinpoint your exact location.
       </p>
