@@ -45,6 +45,7 @@ const WorkerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"all" | "pending" | "confirmed" | "completed">("all");
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [viewingMapBooking, setViewingMapBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
