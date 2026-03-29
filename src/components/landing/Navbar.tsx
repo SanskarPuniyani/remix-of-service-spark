@@ -225,21 +225,11 @@ const Navbar = () => {
                 </Tooltip>
 
                 <div className="flex items-center gap-2">
-                  {role !== "provider" && !hasProviderRecord && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link to="/provider-setup"><Button variant="outline" size="sm" className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9">Become Provider</Button></Link>
-                      </TooltipTrigger>
-                      {role === "worker" && <TooltipContent className="bg-destructive text-destructive-foreground border-none"><p className="text-xs">Note: You will lose your Worker role if you become a Provider.</p></TooltipContent>}
-                    </Tooltip>
+                  {role !== "provider" && !hasProviderRecord && !hasWorkerRecord && (
+                    <Link to="/provider-setup"><Button variant="outline" size="sm" className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9">Become Provider</Button></Link>
                   )}
-                  {role !== "worker" && !hasWorkerRecord && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link to="/worker-setup"><Button variant="outline" size="sm" className="rounded-full border-accent/20 hover:bg-accent/5 text-accent h-9">Become Worker</Button></Link>
-                      </TooltipTrigger>
-                      {role === "provider" && <TooltipContent className="bg-destructive text-destructive-foreground border-none"><p className="text-xs">Note: You will lose your Provider role if you become a Worker.</p></TooltipContent>}
-                    </Tooltip>
+                  {role !== "worker" && !hasWorkerRecord && !hasProviderRecord && (
+                    <Link to="/worker-setup"><Button variant="outline" size="sm" className="rounded-full border-accent/20 hover:bg-accent/5 text-accent h-9">Become Worker</Button></Link>
                   )}
                   {hasProviderRecord && role !== "provider" && (
                     <Button variant="outline" size="sm" onClick={() => handleSwitchView("provider")} className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9 gap-2"><Zap className="w-3 h-3" /> Switch to Provider</Button>
