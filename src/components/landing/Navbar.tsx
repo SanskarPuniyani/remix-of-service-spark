@@ -100,6 +100,31 @@ const Navbar = () => {
     }
   };
 
+  const handleRevokeRole = async (revokeRole: "provider" | "worker") => {
+    if (!user) return;
+    try {
+      if (revokeRole === "provider") {
+        // Delete all provider records for this user
+        const { data: providerRecords } = await supabase.from("providers").select("id").eq("user_id", user.id);
+        if (providerRecords) {
+          for (const p of providerRecords) {
+            await supabase.from("workers").delete().eq("provider_id", p.id);
+            await supabase.from("providers").delete().eq("id", p.id);
+          }
+        }
+      } else {
+        await supabase.from("workers").delete().eq("user_id", user.id);
+      }
+      await switchRole("customer");
+      setHasProviderRecord(false);
+      setHasWorkerRecord(false);
+      toast({ title: "Role Revoked", description: `You are now a customer. You can become a ${revokeRole} again anytime.` });
+      navigate("/");
+    } catch (error) {
+      toast({ title: "Failed to revoke role", variant: "destructive" });
+    }
+  };
+
   const fetchProfile = async () => {
     if (!user) return;
     const { data } = await supabase
