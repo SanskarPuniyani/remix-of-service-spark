@@ -103,7 +103,6 @@ const EditProfile = () => {
     const { error } = await supabase
       .from("profiles")
       .update({
-        full_name: form.full_name,
         phone: form.phone,
         house_no: form.house_no,
         area: form.area,
@@ -205,13 +204,9 @@ const EditProfile = () => {
                         <label className="text-sm font-semibold flex items-center gap-2">
                           Full Name
                         </label>
-                        <input
-                          required
-                          value={form.full_name}
-                          onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                          placeholder="Enter your full name"
-                          className="w-full h-12 px-4 rounded-xl bg-secondary/30 border border-border focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                        />
+                        <div className="w-full h-12 px-4 rounded-xl bg-secondary/20 border border-border/50 flex items-center text-sm text-muted-foreground">
+                          {form.full_name}
+                        </div>
                       </div>
                       
                       <div className="space-y-2">
