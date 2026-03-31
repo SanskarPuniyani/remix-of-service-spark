@@ -180,10 +180,6 @@ const AuthPage = () => {
         options: {
           data: { 
             full_name: fullName, 
-            phone, 
-            house_no: houseNo,
-            area,
-            city,
             role: "customer"
           },
           emailRedirectTo: window.location.origin,
@@ -297,18 +293,7 @@ const AuthPage = () => {
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   {!isLogin && (
-                    <>
-                      <FloatingInput icon={User} label="Full Name" value={fullName} onChange={setFullName} required />
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FloatingInput icon={Phone} label="Phone Number" type="tel" value={phone} onChange={setPhone} required />
-                        <FloatingInput icon={Home} label="House No./Building" value={houseNo} onChange={setHouseNo} required />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FloatingInput icon={Building} label="Area" value={area} onChange={setArea} required />
-                        <FloatingInput icon={MapPin} label="City" value={city} onChange={setCity} required />
-                      </div>
-                      
-                    </>
+                    <FloatingInput icon={User} label="Full Name" value={fullName} onChange={setFullName} required />
                   )}
 
                   <FloatingInput icon={Mail} label="Email address" type="email" value={email} onChange={setEmail} required />
@@ -379,7 +364,7 @@ const AuthPage = () => {
                   {/* Submit */}
                   <motion.button
                       type="submit"
-                      disabled={loading || (!isLogin && !passwordsMatch) || (!isLogin && (!fullName || !phone || !houseNo || !area || !city))}
+                      disabled={loading || (!isLogin && !passwordsMatch) || (!isLogin && !fullName)}
                       className="w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white mt-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden transition-all duration-300"
                     style={{
                       background: "linear-gradient(135deg, #8b5cf6, #3b82f6)",
