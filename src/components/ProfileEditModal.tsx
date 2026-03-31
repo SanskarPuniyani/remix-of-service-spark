@@ -45,7 +45,7 @@ export const ProfileEditModal = ({
           .from("profiles")
           .select("full_name, phone, house_no, area, city, latitude, longitude")
           .eq("user_id", userId)
-          .single();
+          .maybeSingle();
         
         if (data) {
           setForm({

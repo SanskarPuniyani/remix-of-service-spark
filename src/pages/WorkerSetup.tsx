@@ -62,7 +62,7 @@ const WorkerSetup = () => {
       .from("profiles")
       .select("role")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profile?.role === "provider") {
       toast({ title: "Operation Failed", description: "You are already a provider.", variant: "destructive" });

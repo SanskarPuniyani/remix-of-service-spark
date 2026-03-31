@@ -163,7 +163,7 @@ const AuthPage = () => {
           .from("profiles")
           .select("role")
           .eq("user_id", data.user.id)
-          .single();
+          .maybeSingle();
         const userRole = profileData?.role;
         if (userRole === "provider") {
           navigate("/provider/dashboard");

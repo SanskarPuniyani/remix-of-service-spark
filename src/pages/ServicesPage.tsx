@@ -368,7 +368,7 @@ const ServicesPage = () => {
         .from("profiles")
         .select("city, latitude, longitude")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       // Also check for default address (takes priority for distance calc)
       const { data: defaultAddr } = await supabase

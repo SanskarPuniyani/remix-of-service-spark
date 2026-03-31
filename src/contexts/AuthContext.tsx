@@ -32,8 +32,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .from("profiles")
       .select("role")
       .eq("user_id", userId)
-      .single();
-    setRole(data?.role || null);
+      .maybeSingle();
+    setRole(data?.role || "customer");
   };
 
   const switchRole = async (newRole: string) => {
