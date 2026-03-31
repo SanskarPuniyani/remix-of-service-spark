@@ -180,10 +180,6 @@ const AuthPage = () => {
         options: {
           data: { 
             full_name: fullName, 
-            phone, 
-            house_no: houseNo,
-            area,
-            city,
             role: "customer"
           },
           emailRedirectTo: window.location.origin,
