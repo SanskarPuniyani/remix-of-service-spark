@@ -203,7 +203,7 @@ const ProviderDashboard = () => {
       .from("profiles")
       .select("city")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profile.city !== providerProfile?.city) {
       setIsAddingWorker(false);
