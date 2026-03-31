@@ -57,7 +57,7 @@ const EditProfile = () => {
         
         if (data) {
           setForm({
-            full_name: data.full_name || "",
+            full_name: data.full_name || user?.user_metadata?.full_name || "",
             email: data.email || user?.email || "",
             phone: data.phone || "",
             house_no: data.house_no || "",
@@ -70,6 +70,13 @@ const EditProfile = () => {
             experience: data.experience || "",
             hourly_rate: data.hourly_rate || 0
           });
+        } else {
+          // No profile row yet — use auth metadata
+          setForm(prev => ({
+            ...prev,
+            full_name: user?.user_metadata?.full_name || "",
+            email: user?.email || "",
+          }));
         }
         setFetching(false);
       };
