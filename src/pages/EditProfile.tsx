@@ -103,7 +103,6 @@ const EditProfile = () => {
     const { error } = await supabase
       .from("profiles")
       .update({
-        full_name: form.full_name,
         phone: form.phone,
         house_no: form.house_no,
         area: form.area,
