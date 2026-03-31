@@ -364,7 +364,7 @@ const AuthPage = () => {
                   {/* Submit */}
                   <motion.button
                       type="submit"
-                      disabled={loading || (!isLogin && !passwordsMatch) || (!isLogin && (!fullName || !phone || !houseNo || !area || !city))}
+                      disabled={loading || (!isLogin && !passwordsMatch) || (!isLogin && !fullName)}
                       className="w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white mt-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden transition-all duration-300"
                     style={{
                       background: "linear-gradient(135deg, #8b5cf6, #3b82f6)",
