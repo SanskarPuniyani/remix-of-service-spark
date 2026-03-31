@@ -53,7 +53,7 @@ const EditProfile = () => {
           .from("profiles")
           .select("full_name, email, phone, house_no, area, city, role, service_category, latitude, longitude, experience, hourly_rate")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         
         if (data) {
           setForm({
@@ -109,17 +109,20 @@ const EditProfile = () => {
 
     const { error } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        user_id: user.id,
+        full_name: form.full_name,
+        email: form.email,
         phone: form.phone,
         house_no: form.house_no,
         area: form.area,
         city: form.city,
+        role: form.role,
         latitude: lat,
         longitude: lon,
         experience: form.experience,
         hourly_rate: form.hourly_rate
-      })
-      .eq("user_id", user.id);
+      }, { onConflict: "user_id" });
 
     setLoading(false);
     if (error) {
