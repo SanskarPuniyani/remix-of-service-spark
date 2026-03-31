@@ -53,7 +53,7 @@ const EditProfile = () => {
           .from("profiles")
           .select("full_name, email, phone, house_no, area, city, role, service_category, latitude, longitude, experience, hourly_rate")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         
         if (data) {
           setForm({

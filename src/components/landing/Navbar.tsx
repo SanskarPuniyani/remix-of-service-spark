@@ -131,8 +131,18 @@ const Navbar = () => {
       .from("profiles")
       .select("*")
       .eq("user_id", user.id)
-      .single();
-    if (data) setProfile(data);
+      .maybeSingle();
+    if (data) {
+      setProfile(data);
+    } else {
+      // Fallback to auth metadata if no profile row yet
+      setProfile({
+        full_name: user.user_metadata?.full_name || "",
+        email: user.email || "",
+        phone: "",
+        city: "",
+      });
+    }
   };
 
   const fetchAddresses = async () => {
