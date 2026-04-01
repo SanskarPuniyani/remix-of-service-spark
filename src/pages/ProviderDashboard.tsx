@@ -326,13 +326,23 @@ const ProviderDashboard = () => {
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Worker Assigned!" });
-      setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, worker_id: workerId, status: "confirmed" } : b))
-      );
-      setAssigningJobId(null);
+      return;
     }
+
+    // Set worker to inactive
+    await supabase
+      .from("workers")
+      .update({ is_active: false })
+      .eq("id", workerId);
+
+    toast({ title: "Worker Assigned!" });
+    setBookings((prev) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, worker_id: workerId, status: "confirmed" } : b))
+    );
+    setWorkers((prev) =>
+      prev.map((w) => (w.id === workerId ? { ...w, is_active: false } : w))
+    );
+    setAssigningJobId(null);
   };
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
@@ -671,27 +681,28 @@ const ProviderDashboard = () => {
                           {assigningJobId === booking.id ? (
                             <div className="flex flex-col gap-2 p-3 bg-secondary/30 rounded-xl border border-border/50">
                               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Assign Worker</p>
-                              <div className="flex flex-wrap gap-2">
-                                {workers.filter(w => w.status === "accepted" && w.is_active).length === 0 ? (
-                                  <p className="text-[10px] text-muted-foreground italic">No accepted workers available</p>
-                                ) : (
-                                  workers.filter(w => w.status === "accepted" && w.is_active).map(w => (
-                                    <button
-                                      key={w.id}
-                                      onClick={() => assignWorker(booking.id, w.id)}
-                                      className="px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary hover:text-white transition-all border border-primary/20"
-                                    >
-                                      {w.name}
-                                    </button>
-                                  ))
-                                )}
-                                <button 
-                                  onClick={() => setAssigningJobId(null)}
-                                  className="px-2.5 py-1.5 rounded-lg bg-secondary text-muted-foreground text-[10px] font-bold hover:bg-secondary/80"
+                              {workers.filter(w => w.status === "accepted" && w.is_active).length === 0 ? (
+                                <p className="text-[10px] text-muted-foreground italic">No active workers available</p>
+                              ) : (
+                                <select
+                                  className="w-full h-9 px-3 rounded-lg bg-secondary/50 border border-border/30 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                  defaultValue=""
+                                  onChange={(e) => {
+                                    if (e.target.value) assignWorker(booking.id, e.target.value);
+                                  }}
                                 >
-                                  Cancel
-                                </button>
-                              </div>
+                                  <option value="" disabled>Select a worker...</option>
+                                  {workers.filter(w => w.status === "accepted" && w.is_active).map(w => (
+                                    <option key={w.id} value={w.id}>{w.name}</option>
+                                  ))}
+                                </select>
+                              )}
+                              <button 
+                                onClick={() => setAssigningJobId(null)}
+                                className="px-2.5 py-1.5 rounded-lg bg-secondary text-muted-foreground text-[10px] font-bold hover:bg-secondary/80"
+                              >
+                                Cancel
+                              </button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
