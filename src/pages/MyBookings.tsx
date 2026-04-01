@@ -113,6 +113,8 @@ const MyBookings = () => {
   };
 
   const markCompleted = async (bookingId: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    
     const { error } = await supabase
       .from("bookings")
       .update({ status: "completed" })
@@ -121,6 +123,13 @@ const MyBookings = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
+      // Reactivate the worker
+      if (booking?.worker_id) {
+        await supabase
+          .from("workers")
+          .update({ is_active: true })
+          .eq("id", booking.worker_id);
+      }
       toast({ title: "Job marked as completed!" });
       setBookings((prev) =>
         prev.map((b) => (b.id === bookingId ? { ...b, status: "completed" } : b))
