@@ -326,13 +326,23 @@ const ProviderDashboard = () => {
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Worker Assigned!" });
-      setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, worker_id: workerId, status: "confirmed" } : b))
-      );
-      setAssigningJobId(null);
+      return;
     }
+
+    // Set worker to inactive
+    await supabase
+      .from("workers")
+      .update({ is_active: false })
+      .eq("id", workerId);
+
+    toast({ title: "Worker Assigned!" });
+    setBookings((prev) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, worker_id: workerId, status: "confirmed" } : b))
+    );
+    setWorkers((prev) =>
+      prev.map((w) => (w.id === workerId ? { ...w, is_active: false } : w))
+    );
+    setAssigningJobId(null);
   };
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
