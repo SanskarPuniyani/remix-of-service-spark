@@ -159,6 +159,7 @@ const WorkerDashboard = () => {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
         toast({ title: "Request Accepted!", description: "You are now linked to this provider." });
+        setPendingRequests(prev => prev.filter(r => r.id !== requestId));
         fetchData();
       }
     } else {
