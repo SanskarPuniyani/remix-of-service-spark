@@ -26,6 +26,8 @@ type Booking = {
     area: string;
     city: string;
   };
+  booking_type?: string;
+  customer_name?: string;
 };
 
 type Provider = {
