@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 import Navbar from "@/components/landing/Navbar";
+import ManualBookingModal from "@/components/ManualBookingModal";
 
 type Booking = {
   id: string;
