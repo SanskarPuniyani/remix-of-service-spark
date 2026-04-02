@@ -674,6 +674,9 @@ const ProviderDashboard = () => {
                         </div>
                         {booking.customer_phone && (
                           <div className="text-xs text-muted-foreground mb-1">
+                            {booking.booking_type === "manual" && booking.customer_name && (
+                              <span className="font-medium text-foreground mr-2">{booking.customer_name}</span>
+                            )}
                             Phone: <a href={`tel:${booking.customer_phone}`} className="text-primary hover:underline">{booking.customer_phone}</a>
                           </div>
                         )}
