@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Briefcase, Star, DollarSign, Clock, CheckCircle, XCircle, LogOut, ChevronDown, TrendingUp, Calendar, PlusCircle, Settings, Users, UserPlus, Loader2, MapPin } from "lucide-react";
+import { Briefcase, Star, DollarSign, Clock, CheckCircle, XCircle, LogOut, ChevronDown, TrendingUp, Calendar, PlusCircle, Settings, Users, UserPlus, Loader2, MapPin, ClipboardPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
