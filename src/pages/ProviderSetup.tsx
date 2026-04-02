@@ -31,7 +31,7 @@ const ProviderSetup = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    service_category: "",
+    selected_categories: [] as string[],
     service_name: "",
     base_price: 500,
     experience: "1-3 years",
@@ -81,15 +81,21 @@ const ProviderSetup = () => {
       }
     }
 
-    const { error: providerError } = await supabase.from("providers").insert({
-      user_id: user.id,
-      service_category: form.service_category,
-      service_name: form.service_name,
-      base_price: form.base_price,
-      experience: form.experience,
-      service_area: form.service_area,
-      avatar_initials: initials,
-    });
+    // Create a provider entry for each selected category
+    const insertPromises = form.selected_categories.map((category) =>
+      supabase.from("providers").insert({
+        user_id: user.id,
+        service_category: category,
+        service_name: form.service_name,
+        base_price: form.base_price,
+        experience: form.experience,
+        service_area: form.service_area,
+        avatar_initials: initials,
+      })
+    );
+
+    const results = await Promise.all(insertPromises);
+    const providerError = results.find(r => r.error)?.error;
 
     if (!providerError) {
       // Ensure profile role is updated to provider and coordinates are saved
@@ -191,23 +197,34 @@ const ProviderSetup = () => {
               {/* Service Category */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-primary" /> Service Category
+                  <Briefcase className="w-4 h-4 text-primary" /> Service Categories
+                  <span className="text-xs text-muted-foreground">(select one or more)</span>
                 </label>
-                <div className="relative group">
-                  <select
-                    required
-                    value={form.service_category}
-                    onChange={(e) => update("service_category", e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border/30 text-foreground appearance-none focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-sm cursor-pointer"
-                  >
-                    <option value="" disabled className="bg-card text-muted-foreground">Select a category</option>
-                    {serviceCategories.map((cat) => (
-                      <option key={cat} value={cat} className="bg-card text-foreground">
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 rounded-xl bg-secondary/30 border border-border/30">
+                  {serviceCategories.map((cat) => {
+                    const isSelected = form.selected_categories.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          setForm(prev => ({
+                            ...prev,
+                            selected_categories: isSelected
+                              ? prev.selected_categories.filter(c => c !== cat)
+                              : [...prev.selected_categories, cat]
+                          }));
+                        }}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-md"
+                            : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                        }`}
+                      >
                         {cat}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none transition-transform group-hover:scale-110" />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -301,7 +318,7 @@ const ProviderSetup = () => {
               {/* Submit */}
               <motion.button
                 type="submit"
-                disabled={loading || !form.service_category || !form.service_name || !form.service_area}
+                disabled={loading || form.selected_categories.length === 0 || !form.service_name || !form.service_area}
                 className="w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground mt-4 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                 style={{
                   background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
