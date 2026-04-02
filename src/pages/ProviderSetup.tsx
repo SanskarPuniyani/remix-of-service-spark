@@ -81,15 +81,21 @@ const ProviderSetup = () => {
       }
     }
 
-    const { error: providerError } = await supabase.from("providers").insert({
-      user_id: user.id,
-      service_category: form.service_category,
-      service_name: form.service_name,
-      base_price: form.base_price,
-      experience: form.experience,
-      service_area: form.service_area,
-      avatar_initials: initials,
-    });
+    // Create a provider entry for each selected category
+    const insertPromises = form.selected_categories.map((category) =>
+      supabase.from("providers").insert({
+        user_id: user.id,
+        service_category: category,
+        service_name: form.service_name,
+        base_price: form.base_price,
+        experience: form.experience,
+        service_area: form.service_area,
+        avatar_initials: initials,
+      })
+    );
+
+    const results = await Promise.all(insertPromises);
+    const providerError = results.find(r => r.error)?.error;
 
     if (!providerError) {
       // Ensure profile role is updated to provider and coordinates are saved
