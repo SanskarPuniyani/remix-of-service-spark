@@ -74,7 +74,7 @@ const ProviderDashboard = () => {
   const [newWorkerPhone, setNewWorkerPhone] = useState("");
   const [newWorkerEmail, setNewWorkerEmail] = useState("");
   const [isAddingWorker, setIsAddingWorker] = useState(false);
-
+  const [showManualBooking, setShowManualBooking] = useState(false);
   const deleteWorker = async (workerId: string) => {
     const { error } = await supabase
       .from("workers")
