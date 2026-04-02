@@ -755,6 +755,20 @@ const ProviderDashboard = () => {
           </div>
         </div>
       </div>
+      {activeProvider && (
+        <ManualBookingModal
+          open={showManualBooking}
+          onClose={() => setShowManualBooking(false)}
+          providerId={activeProvider.id}
+          serviceName={activeProvider.service_name}
+          serviceCategory={activeProvider.service_category}
+          basePrice={activeProvider.base_price}
+          workers={workers}
+          onSuccess={() => {
+            fetchData();
+          }}
+        />
+      )}
     </PageTransition>
   );
 };
