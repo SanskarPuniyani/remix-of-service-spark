@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Briefcase, Star, DollarSign, Clock, CheckCircle, XCircle, LogOut, ChevronDown, TrendingUp, Calendar, PlusCircle, Settings, Users, UserPlus, Loader2, MapPin } from "lucide-react";
+import { Briefcase, Star, DollarSign, Clock, CheckCircle, XCircle, LogOut, ChevronDown, TrendingUp, Calendar, PlusCircle, Settings, Users, UserPlus, Loader2, MapPin, ClipboardPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/effects/PageTransition";
 import Navbar from "@/components/landing/Navbar";
+import ManualBookingModal from "@/components/ManualBookingModal";
 
 type Booking = {
   id: string;
@@ -25,6 +26,8 @@ type Booking = {
     area: string;
     city: string;
   };
+  booking_type?: string;
+  customer_name?: string;
 };
 
 type Provider = {
@@ -71,7 +74,7 @@ const ProviderDashboard = () => {
   const [newWorkerPhone, setNewWorkerPhone] = useState("");
   const [newWorkerEmail, setNewWorkerEmail] = useState("");
   const [isAddingWorker, setIsAddingWorker] = useState(false);
-
+  const [showManualBooking, setShowManualBooking] = useState(false);
   const deleteWorker = async (workerId: string) => {
     const { error } = await supabase
       .from("workers")
@@ -444,6 +447,15 @@ const ProviderDashboard = () => {
                 </div>
               </div>
 
+              <button
+                onClick={() => setShowManualBooking(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground transition-all hover:scale-105"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
+              >
+                <ClipboardPlus className="w-4 h-4" />
+                Assisted Booking
+              </button>
+
               <button 
                 onClick={signOut}
                 className="p-2.5 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all"
@@ -640,10 +652,15 @@ const ProviderDashboard = () => {
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-semibold text-foreground">{booking.service_name}</h3>
+                         <h3 className="font-semibold text-foreground">{booking.service_name}</h3>
                           <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${statusColors[booking.status] || "bg-secondary text-muted-foreground"}`}>
                             {booking.status}
                           </span>
+                          {booking.booking_type === "manual" && (
+                            <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-accent/20 text-accent-foreground border border-accent/30">
+                              Assisted
+                            </span>
+                          )}
                           {booking.urgency !== "normal" && (
                             <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-medium capitalize">
                               {booking.urgency}
@@ -657,6 +674,9 @@ const ProviderDashboard = () => {
                         </div>
                         {booking.customer_phone && (
                           <div className="text-xs text-muted-foreground mb-1">
+                            {booking.booking_type === "manual" && booking.customer_name && (
+                              <span className="font-medium text-foreground mr-2">{booking.customer_name}</span>
+                            )}
                             Phone: <a href={`tel:${booking.customer_phone}`} className="text-primary hover:underline">{booking.customer_phone}</a>
                           </div>
                         )}
@@ -735,6 +755,20 @@ const ProviderDashboard = () => {
           </div>
         </div>
       </div>
+      {activeProvider && (
+        <ManualBookingModal
+          open={showManualBooking}
+          onClose={() => setShowManualBooking(false)}
+          providerId={activeProvider.id}
+          serviceName={activeProvider.service_name}
+          serviceCategory={activeProvider.service_category}
+          basePrice={activeProvider.base_price}
+          workers={workers}
+          onSuccess={() => {
+            fetchData();
+          }}
+        />
+      )}
     </PageTransition>
   );
 };
