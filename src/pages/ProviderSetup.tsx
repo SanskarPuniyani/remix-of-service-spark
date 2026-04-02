@@ -31,7 +31,7 @@ const ProviderSetup = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    service_category: "",
+    selected_categories: [] as string[],
     service_name: "",
     base_price: 500,
     experience: "1-3 years",
