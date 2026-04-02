@@ -227,7 +227,6 @@ const ProviderSetup = () => {
                   })}
                 </div>
               </div>
-              </div>
 
               {/* Service Name */}
               <div className="space-y-2">
