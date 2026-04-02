@@ -64,7 +64,13 @@ export type Database = {
           base_price: number
           booking_date: string
           booking_time: string
+          booking_type: string
           created_at: string
+          customer_address_text: string | null
+          customer_latitude: number | null
+          customer_longitude: number | null
+          customer_name: string | null
+          customer_phone: string | null
           final_price: number
           id: string
           payment_status: string
@@ -79,7 +85,13 @@ export type Database = {
           base_price: number
           booking_date: string
           booking_time: string
+          booking_type?: string
           created_at?: string
+          customer_address_text?: string | null
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          customer_name?: string | null
+          customer_phone?: string | null
           final_price: number
           id?: string
           payment_status?: string
@@ -94,7 +106,13 @@ export type Database = {
           base_price?: number
           booking_date?: string
           booking_time?: string
+          booking_type?: string
           created_at?: string
+          customer_address_text?: string | null
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          customer_name?: string | null
+          customer_phone?: string | null
           final_price?: number
           id?: string
           payment_status?: string
