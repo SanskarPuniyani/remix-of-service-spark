@@ -409,9 +409,9 @@ const ProviderDashboard = () => {
             >
               <span className="text-xs font-semibold tracking-[0.3em] uppercase text-primary mb-2 block">Dashboard</span>
               <h1 className="text-3xl sm:text-4xl font-bold font-display tracking-tight">
-                Welcome, <span className="gradient-text">{activeProvider?.service_name}</span>
+                Welcome, <span className="gradient-text">{providerName}</span>
               </h1>
-              <p className="text-muted-foreground mt-1">{activeProvider?.service_category} · {activeProvider?.service_area}</p>
+              <p className="text-muted-foreground mt-1">{activeProvider?.service_name} · {activeProvider?.service_category} · {activeProvider?.service_area}</p>
             </motion.div>
 
             <div className="flex items-center gap-3">
