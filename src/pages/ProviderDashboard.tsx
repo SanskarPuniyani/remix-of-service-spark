@@ -447,6 +447,15 @@ const ProviderDashboard = () => {
                 </div>
               </div>
 
+              <button
+                onClick={() => setShowManualBooking(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground transition-all hover:scale-105"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
+              >
+                <ClipboardPlus className="w-4 h-4" />
+                Assisted Booking
+              </button>
+
               <button 
                 onClick={signOut}
                 className="p-2.5 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all"
