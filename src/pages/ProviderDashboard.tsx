@@ -114,6 +114,14 @@ const ProviderDashboard = () => {
     }
 
     setProviders(providersData);
+
+    // Fetch provider's actual name
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    setProviderName(profile?.full_name || "Provider");
     
     // Set active provider from URL or default to first
     const searchParams = new URLSearchParams(window.location.search);
