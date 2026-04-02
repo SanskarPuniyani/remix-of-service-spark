@@ -397,15 +397,6 @@ const WorkerDashboard = () => {
                                 View Location
                               </button>
                             )}
-                            {booking.status === "confirmed" && (
-                              <button
-                                onClick={() => updateBookingStatus(booking.id, "completed")}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-success text-success-foreground font-semibold text-sm hover:scale-105 transition-all"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                                Complete Job
-                              </button>
-                            )}
                             {booking.status === "pending" && (
                               <button
                                 onClick={() => updateBookingStatus(booking.id, "confirmed")}
