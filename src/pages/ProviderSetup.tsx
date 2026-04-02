@@ -197,24 +197,36 @@ const ProviderSetup = () => {
               {/* Service Category */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-primary" /> Service Category
+                  <Briefcase className="w-4 h-4 text-primary" /> Service Categories
+                  <span className="text-xs text-muted-foreground">(select one or more)</span>
                 </label>
-                <div className="relative group">
-                  <select
-                    required
-                    value={form.service_category}
-                    onChange={(e) => update("service_category", e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border/30 text-foreground appearance-none focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-sm cursor-pointer"
-                  >
-                    <option value="" disabled className="bg-card text-muted-foreground">Select a category</option>
-                    {serviceCategories.map((cat) => (
-                      <option key={cat} value={cat} className="bg-card text-foreground">
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 rounded-xl bg-secondary/30 border border-border/30">
+                  {serviceCategories.map((cat) => {
+                    const isSelected = form.selected_categories.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          setForm(prev => ({
+                            ...prev,
+                            selected_categories: isSelected
+                              ? prev.selected_categories.filter(c => c !== cat)
+                              : [...prev.selected_categories, cat]
+                          }));
+                        }}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-md"
+                            : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                        }`}
+                      >
                         {cat}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none transition-transform group-hover:scale-110" />
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
               </div>
 
               {/* Service Name */}
