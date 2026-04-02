@@ -652,10 +652,15 @@ const ProviderDashboard = () => {
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-semibold text-foreground">{booking.service_name}</h3>
+                         <h3 className="font-semibold text-foreground">{booking.service_name}</h3>
                           <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${statusColors[booking.status] || "bg-secondary text-muted-foreground"}`}>
                             {booking.status}
                           </span>
+                          {booking.booking_type === "manual" && (
+                            <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-accent/20 text-accent-foreground border border-accent/30">
+                              Assisted
+                            </span>
+                          )}
                           {booking.urgency !== "normal" && (
                             <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive font-medium capitalize">
                               {booking.urgency}
