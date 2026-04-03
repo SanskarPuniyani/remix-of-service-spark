@@ -27,7 +27,7 @@ const experienceOptions = ["< 1 year", "1-3 years", "3-5 years", "5-10 years", "
 
 const WorkerSetup = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, role } = useAuth();
+  const { user, loading: authLoading, role, setDbRole } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
