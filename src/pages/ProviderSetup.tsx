@@ -62,7 +62,7 @@ const ProviderSetup = () => {
       setLoading(false);
       return;
     }
-    const initials = form.avatar_initials || form.service_name.slice(0, 2).toUpperCase();
+    const initials = form.avatar_initials || form.selected_categories[0]?.slice(0, 2).toUpperCase() || "SP";
 
     let lat = form.latitude;
     let lon = form.longitude;
