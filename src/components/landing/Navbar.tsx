@@ -85,19 +85,15 @@ const Navbar = () => {
     setHasWorkerRecord(!!workerRes.data);
   };
 
-  const handleSwitchView = async (targetRole: string) => {
-    try {
-      await switchRole(targetRole);
-      toast({ 
-        title: `Switched to ${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)} View`,
-        description: `You are now viewing the app as a ${targetRole}.`
-      });
-      if (targetRole === "customer") navigate("/");
-      else if (targetRole === "provider") navigate("/provider/dashboard");
-      else if (targetRole === "worker") navigate("/worker/dashboard");
-    } catch (error) {
-      toast({ title: "Switch Failed", description: "Could not change role. Please try again.", variant: "destructive" });
-    }
+  const handleSwitchView = (targetRole: string) => {
+    switchView(targetRole);
+    toast({ 
+      title: `Switched to ${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)} View`,
+      description: `You are now viewing the app as a ${targetRole}.`
+    });
+    if (targetRole === "customer") navigate("/");
+    else if (targetRole === "provider") navigate("/provider/dashboard");
+    else if (targetRole === "worker") navigate("/worker/dashboard");
   };
 
   const handleRevokeRole = async (revokeRole: "provider" | "worker") => {
