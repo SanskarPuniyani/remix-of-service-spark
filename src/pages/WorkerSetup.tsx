@@ -74,7 +74,6 @@ const WorkerSetup = () => {
     const { error: profileError } = await supabase
       .from("profiles")
       .update({ 
-        role: "worker",
         service_category: form.service_category,
         experience: form.experience,
         full_name: form.name || undefined
@@ -82,6 +81,7 @@ const WorkerSetup = () => {
       .eq("user_id", user.id);
 
     if (!profileError) {
+      await setDbRole("worker");
       toast({ title: "Registration Successful!", description: "You are now registered as a worker. Providers can now find and add you." });
       navigate("/worker/dashboard");
     } else {
