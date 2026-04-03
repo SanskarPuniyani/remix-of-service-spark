@@ -230,16 +230,16 @@ const Navbar = () => {
                 </Tooltip>
 
                 <div className="flex items-center gap-2">
-                  {role !== "provider" && !hasProviderRecord && !hasWorkerRecord && (
+                  {role !== "provider" && role !== "worker" && !hasProviderRecord && !hasWorkerRecord && (
                     <Link to="/provider-setup"><Button variant="outline" size="sm" className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9">Become Provider</Button></Link>
                   )}
-                  {role !== "worker" && !hasWorkerRecord && !hasProviderRecord && (
+                  {role !== "worker" && role !== "provider" && !hasWorkerRecord && !hasProviderRecord && (
                     <Link to="/worker-setup"><Button variant="outline" size="sm" className="rounded-full border-accent/20 hover:bg-accent/5 text-accent h-9">Become Worker</Button></Link>
                   )}
-                  {hasProviderRecord && role !== "provider" && (
+                  {hasProviderRecord && activeView !== "provider" && (
                     <Button variant="outline" size="sm" onClick={() => handleSwitchView("provider")} className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9 gap-2"><Zap className="w-3 h-3" /> Switch to Provider</Button>
                   )}
-                  {hasWorkerRecord && role !== "worker" && (
+                  {hasWorkerRecord && activeView !== "worker" && (
                     <Button variant="outline" size="sm" onClick={() => handleSwitchView("worker")} className="rounded-full border-accent/20 hover:bg-accent/5 text-accent h-9 gap-2"><Zap className="w-3 h-3" /> Switch to Worker</Button>
                   )}
                 </div>
