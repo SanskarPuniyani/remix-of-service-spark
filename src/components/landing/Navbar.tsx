@@ -100,7 +100,6 @@ const Navbar = () => {
     if (!user) return;
     try {
       if (revokeRole === "provider") {
-        // Delete all provider records for this user
         const { data: providerRecords } = await supabase.from("providers").select("id").eq("user_id", user.id);
         if (providerRecords) {
           for (const p of providerRecords) {
@@ -111,7 +110,7 @@ const Navbar = () => {
       } else {
         await supabase.from("workers").delete().eq("user_id", user.id);
       }
-      await switchRole("customer");
+      await setDbRole("customer");
       setHasProviderRecord(false);
       setHasWorkerRecord(false);
       toast({ title: "Role Revoked", description: `You are now a customer. You can become a ${revokeRole} again anytime.` });
