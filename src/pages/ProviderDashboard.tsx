@@ -59,6 +59,12 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-destructive/20 text-destructive",
 };
 
+const allServiceCategories = [
+  "Electrician", "Plumber", "Electronics", "Painting", "Deep Cleaning",
+  "Pest Control", "Beautician", "Barber", "Massage", "Car Wash",
+  "Vehicle Repair", "Movers"
+];
+
 const ProviderDashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -76,6 +82,42 @@ const ProviderDashboard = () => {
   const [isAddingWorker, setIsAddingWorker] = useState(false);
   const [showManualBooking, setShowManualBooking] = useState(false);
   const [providerName, setProviderName] = useState("");
+  const [showAddCategories, setShowAddCategories] = useState(false);
+  const [selectedNewCategories, setSelectedNewCategories] = useState<string[]>([]);
+  const [addingCategories, setAddingCategories] = useState(false);
+
+  const existingCategories = providers.map(p => p.service_category);
+  const availableCategories = allServiceCategories.filter(c => !existingCategories.includes(c));
+
+  const handleAddCategories = async () => {
+    if (!user || !activeProvider || selectedNewCategories.length === 0) return;
+    setAddingCategories(true);
+
+    const insertPromises = selectedNewCategories.map(category =>
+      supabase.from("providers").insert({
+        user_id: user.id,
+        service_category: category,
+        service_name: activeProvider.service_name,
+        base_price: activeProvider.base_price,
+        experience: activeProvider.experience,
+        service_area: activeProvider.service_area,
+        avatar_initials: activeProvider.service_name.slice(0, 2).toUpperCase(),
+      })
+    );
+
+    const results = await Promise.all(insertPromises);
+    const err = results.find(r => r.error)?.error;
+    setAddingCategories(false);
+
+    if (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } else {
+      toast({ title: "Categories Added!", description: `${selectedNewCategories.length} new service(s) added.` });
+      setSelectedNewCategories([]);
+      setShowAddCategories(false);
+      fetchData();
+    }
+  };
   const deleteWorker = async (workerId: string) => {
     const { error } = await supabase
       .from("workers")
