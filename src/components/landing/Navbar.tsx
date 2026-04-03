@@ -53,7 +53,7 @@ const Navbar = () => {
   const [hasProviderRecord, setHasProviderRecord] = useState(false);
   const [hasWorkerRecord, setHasWorkerRecord] = useState(false);
   const navigate = useNavigate();
-  const { user, signOut, role, switchRole } = useAuth();
+  const { user, signOut, role, activeView, switchView, setDbRole } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
