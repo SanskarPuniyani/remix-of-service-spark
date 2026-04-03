@@ -59,6 +59,12 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-destructive/20 text-destructive",
 };
 
+const allServiceCategories = [
+  "Electrician", "Plumber", "Electronics", "Painting", "Deep Cleaning",
+  "Pest Control", "Beautician", "Barber", "Massage", "Car Wash",
+  "Vehicle Repair", "Movers"
+];
+
 const ProviderDashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -76,6 +82,42 @@ const ProviderDashboard = () => {
   const [isAddingWorker, setIsAddingWorker] = useState(false);
   const [showManualBooking, setShowManualBooking] = useState(false);
   const [providerName, setProviderName] = useState("");
+  const [showAddCategories, setShowAddCategories] = useState(false);
+  const [selectedNewCategories, setSelectedNewCategories] = useState<string[]>([]);
+  const [addingCategories, setAddingCategories] = useState(false);
+
+  const existingCategories = providers.map(p => p.service_category);
+  const availableCategories = allServiceCategories.filter(c => !existingCategories.includes(c));
+
+  const handleAddCategories = async () => {
+    if (!user || !activeProvider || selectedNewCategories.length === 0) return;
+    setAddingCategories(true);
+
+    const insertPromises = selectedNewCategories.map(category =>
+      supabase.from("providers").insert({
+        user_id: user.id,
+        service_category: category,
+        service_name: activeProvider.service_name,
+        base_price: activeProvider.base_price,
+        experience: activeProvider.experience,
+        service_area: activeProvider.service_area,
+        avatar_initials: activeProvider.service_name.slice(0, 2).toUpperCase(),
+      })
+    );
+
+    const results = await Promise.all(insertPromises);
+    const err = results.find(r => r.error)?.error;
+    setAddingCategories(false);
+
+    if (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } else {
+      toast({ title: "Categories Added!", description: `${selectedNewCategories.length} new service(s) added.` });
+      setSelectedNewCategories([]);
+      setShowAddCategories(false);
+      fetchData();
+    }
+  };
   const deleteWorker = async (workerId: string) => {
     const { error } = await supabase
       .from("workers")
@@ -443,15 +485,17 @@ const ProviderDashboard = () => {
                         </div>
                       </button>
                     ))}
-                    <div className="border-t border-border/50 my-2 pt-2">
-                      <button 
-                        onClick={() => navigate("/provider/setup")}
-                        className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-primary hover:bg-primary/5 transition-all"
-                      >
-                        <PlusCircle className="w-5 h-5" />
-                        <span className="text-sm font-semibold">Add New Service</span>
-                      </button>
-                    </div>
+                    {availableCategories.length > 0 && (
+                      <div className="border-t border-border/50 my-2 pt-2">
+                        <button 
+                          onClick={() => { setShowAddCategories(true); setSelectedNewCategories([]); }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-primary hover:bg-primary/5 transition-all"
+                        >
+                          <PlusCircle className="w-5 h-5" />
+                          <span className="text-sm font-semibold">Add More Categories</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -778,6 +822,80 @@ const ProviderDashboard = () => {
           }}
         />
       )}
+
+      {/* Add Categories Modal */}
+      <AnimatePresence>
+        {showAddCategories && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowAddCategories(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl p-6 relative overflow-hidden"
+              style={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border) / 0.5)",
+                boxShadow: "0 20px 50px hsl(0 0% 0% / 0.4)",
+              }}
+            >
+              <h2 className="text-xl font-bold font-display mb-1">Add Service Categories</h2>
+              <p className="text-sm text-muted-foreground mb-4">Select categories to add to your services</p>
+
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto mb-5">
+                {availableCategories.map((cat) => {
+                  const isSelected = selectedNewCategories.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() =>
+                        setSelectedNewCategories(prev =>
+                          isSelected ? prev.filter(c => c !== cat) : [...prev, cat]
+                        )
+                      }
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowAddCategories(false)}
+                  className="flex-1 h-10 rounded-xl bg-secondary/50 text-sm font-medium hover:bg-secondary transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCategories}
+                  disabled={selectedNewCategories.length === 0 || addingCategories}
+                  className="flex-1 h-10 rounded-xl text-sm font-semibold text-primary-foreground disabled:opacity-50 transition-all"
+                  style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
+                >
+                  {addingCategories ? (
+                    <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Adding...</span>
+                  ) : (
+                    `Add ${selectedNewCategories.length || ""} Category${selectedNewCategories.length !== 1 ? "ies" : ""}`
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 };
