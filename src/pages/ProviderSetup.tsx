@@ -99,10 +99,10 @@ const ProviderSetup = () => {
 
     if (!providerError) {
       // Ensure profile role is updated to provider and coordinates are saved
+      await setDbRole("provider");
       await supabase
         .from("profiles")
         .update({ 
-          role: "provider",
           latitude: lat,
           longitude: lon
         })
