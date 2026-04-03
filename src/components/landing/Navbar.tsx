@@ -253,7 +253,7 @@ const Navbar = () => {
                       </Avatar>
                       <div className="text-left hidden lg:block pr-2">
                         <p className="text-xs font-bold truncate max-w-[100px] leading-tight">{profile?.full_name || "User"}</p>
-                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">{role}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">{activeView}</p>
                       </div>
                     </button>
                   </DropdownMenuTrigger>
