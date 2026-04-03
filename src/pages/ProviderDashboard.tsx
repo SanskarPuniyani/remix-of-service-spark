@@ -822,6 +822,80 @@ const ProviderDashboard = () => {
           }}
         />
       )}
+
+      {/* Add Categories Modal */}
+      <AnimatePresence>
+        {showAddCategories && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowAddCategories(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl p-6 relative overflow-hidden"
+              style={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border) / 0.5)",
+                boxShadow: "0 20px 50px hsl(0 0% 0% / 0.4)",
+              }}
+            >
+              <h2 className="text-xl font-bold font-display mb-1">Add Service Categories</h2>
+              <p className="text-sm text-muted-foreground mb-4">Select categories to add to your services</p>
+
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto mb-5">
+                {availableCategories.map((cat) => {
+                  const isSelected = selectedNewCategories.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() =>
+                        setSelectedNewCategories(prev =>
+                          isSelected ? prev.filter(c => c !== cat) : [...prev, cat]
+                        )
+                      }
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowAddCategories(false)}
+                  className="flex-1 h-10 rounded-xl bg-secondary/50 text-sm font-medium hover:bg-secondary transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCategories}
+                  disabled={selectedNewCategories.length === 0 || addingCategories}
+                  className="flex-1 h-10 rounded-xl text-sm font-semibold text-primary-foreground disabled:opacity-50 transition-all"
+                  style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
+                >
+                  {addingCategories ? (
+                    <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Adding...</span>
+                  ) : (
+                    `Add ${selectedNewCategories.length || ""} Category${selectedNewCategories.length !== 1 ? "ies" : ""}`
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 };
