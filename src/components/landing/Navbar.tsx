@@ -53,7 +53,7 @@ const Navbar = () => {
   const [hasProviderRecord, setHasProviderRecord] = useState(false);
   const [hasWorkerRecord, setHasWorkerRecord] = useState(false);
   const navigate = useNavigate();
-  const { user, signOut, role, switchRole } = useAuth();
+  const { user, signOut, role, activeView, switchView, setDbRole } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -85,26 +85,21 @@ const Navbar = () => {
     setHasWorkerRecord(!!workerRes.data);
   };
 
-  const handleSwitchView = async (targetRole: string) => {
-    try {
-      await switchRole(targetRole);
-      toast({ 
-        title: `Switched to ${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)} View`,
-        description: `You are now viewing the app as a ${targetRole}.`
-      });
-      if (targetRole === "customer") navigate("/");
-      else if (targetRole === "provider") navigate("/provider/dashboard");
-      else if (targetRole === "worker") navigate("/worker/dashboard");
-    } catch (error) {
-      toast({ title: "Switch Failed", description: "Could not change role. Please try again.", variant: "destructive" });
-    }
+  const handleSwitchView = (targetRole: string) => {
+    switchView(targetRole);
+    toast({ 
+      title: `Switched to ${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)} View`,
+      description: `You are now viewing the app as a ${targetRole}.`
+    });
+    if (targetRole === "customer") navigate("/");
+    else if (targetRole === "provider") navigate("/provider/dashboard");
+    else if (targetRole === "worker") navigate("/worker/dashboard");
   };
 
   const handleRevokeRole = async (revokeRole: "provider" | "worker") => {
     if (!user) return;
     try {
       if (revokeRole === "provider") {
-        // Delete all provider records for this user
         const { data: providerRecords } = await supabase.from("providers").select("id").eq("user_id", user.id);
         if (providerRecords) {
           for (const p of providerRecords) {
@@ -115,7 +110,7 @@ const Navbar = () => {
       } else {
         await supabase.from("workers").delete().eq("user_id", user.id);
       }
-      await switchRole("customer");
+      await setDbRole("customer");
       setHasProviderRecord(false);
       setHasWorkerRecord(false);
       toast({ title: "Role Revoked", description: `You are now a customer. You can become a ${revokeRole} again anytime.` });
@@ -235,16 +230,16 @@ const Navbar = () => {
                 </Tooltip>
 
                 <div className="flex items-center gap-2">
-                  {role !== "provider" && !hasProviderRecord && !hasWorkerRecord && (
+                  {role !== "provider" && role !== "worker" && !hasProviderRecord && !hasWorkerRecord && (
                     <Link to="/provider-setup"><Button variant="outline" size="sm" className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9">Become Provider</Button></Link>
                   )}
-                  {role !== "worker" && !hasWorkerRecord && !hasProviderRecord && (
+                  {role !== "worker" && role !== "provider" && !hasWorkerRecord && !hasProviderRecord && (
                     <Link to="/worker-setup"><Button variant="outline" size="sm" className="rounded-full border-accent/20 hover:bg-accent/5 text-accent h-9">Become Worker</Button></Link>
                   )}
-                  {hasProviderRecord && role !== "provider" && (
+                  {hasProviderRecord && activeView !== "provider" && (
                     <Button variant="outline" size="sm" onClick={() => handleSwitchView("provider")} className="rounded-full border-primary/20 hover:bg-primary/5 text-primary h-9 gap-2"><Zap className="w-3 h-3" /> Switch to Provider</Button>
                   )}
-                  {hasWorkerRecord && role !== "worker" && (
+                  {hasWorkerRecord && activeView !== "worker" && (
                     <Button variant="outline" size="sm" onClick={() => handleSwitchView("worker")} className="rounded-full border-accent/20 hover:bg-accent/5 text-accent h-9 gap-2"><Zap className="w-3 h-3" /> Switch to Worker</Button>
                   )}
                 </div>
@@ -258,7 +253,7 @@ const Navbar = () => {
                       </Avatar>
                       <div className="text-left hidden lg:block pr-2">
                         <p className="text-xs font-bold truncate max-w-[100px] leading-tight">{profile?.full_name || "User"}</p>
-                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">{role}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">{activeView}</p>
                       </div>
                     </button>
                   </DropdownMenuTrigger>
@@ -278,7 +273,7 @@ const Navbar = () => {
                         <div className="grid grid-cols-1 gap-1.5 mt-2 bg-secondary/30 p-3 rounded-xl border border-border/50">
                           <div className="flex items-center gap-2 text-[11px]"><Phone className="w-3 h-3 text-primary" /><span className="text-muted-foreground font-medium">Phone:</span><span className="font-bold">{profile?.phone || "Not provided"}</span></div>
                           <div className="flex items-center gap-2 text-[11px]"><MapPin className="w-3 h-3 text-primary" /><span className="text-muted-foreground font-medium">City:</span><span className="font-bold">{profile?.city || "Not provided"}</span></div>
-                          <div className="flex items-center gap-2 text-[11px]"><Shield className="w-3 h-3 text-primary" /><span className="text-muted-foreground font-medium">Role:</span><span className="font-bold uppercase text-primary">{role}</span></div>
+                          <div className="flex items-center gap-2 text-[11px]"><Shield className="w-3 h-3 text-primary" /><span className="text-muted-foreground font-medium">Role:</span><span className="font-bold uppercase text-primary">{role}</span>{activeView !== role && <span className="text-[9px] text-muted-foreground">(viewing as {activeView})</span>}</div>
                           {profile?.experience && <div className="flex items-center gap-2 text-[11px]"><Briefcase className="w-3 h-3 text-primary" /><span className="text-muted-foreground font-medium">Experience:</span><span className="font-bold">{profile.experience}</span></div>}
                           {profile?.hourly_rate && <div className="flex items-center gap-2 text-[11px]"><Plus className="w-3 h-3 text-primary" /><span className="text-muted-foreground font-medium">Rate:</span><span className="font-bold">₹{profile.hourly_rate}/hr</span></div>}
                         </div>
@@ -289,11 +284,11 @@ const Navbar = () => {
                     <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer"><Link to="/my-bookings" className="flex items-center gap-3"><Shield className="w-4 h-4 text-primary" /><span className="font-medium">My Bookings</span></Link></DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground px-3 py-2">Switch Perspective</DropdownMenuLabel>
-                    {role !== "customer" && <DropdownMenuItem onClick={() => handleSwitchView("customer")} className="rounded-xl px-3 py-2.5 cursor-pointer"><div className="flex items-center gap-3"><UserCircle className="w-4 h-4 text-primary" /><span className="font-medium">Switch to Customer View</span></div></DropdownMenuItem>}
-                    {hasProviderRecord && role !== "provider" && <DropdownMenuItem onClick={() => handleSwitchView("provider")} className="rounded-xl px-3 py-2.5 cursor-pointer"><div className="flex items-center gap-3"><LayoutDashboard className="w-4 h-4 text-primary" /><span className="font-medium">Switch to Provider View</span></div></DropdownMenuItem>}
-                    {hasWorkerRecord && role !== "worker" && <DropdownMenuItem onClick={() => handleSwitchView("worker")} className="rounded-xl px-3 py-2.5 cursor-pointer"><div className="flex items-center gap-3"><LayoutDashboard className="w-4 h-4 text-accent" /><span className="font-medium">Switch to Worker View</span></div></DropdownMenuItem>}
-                    {role === "provider" && <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer bg-primary/5"><Link to="/provider/dashboard" className="flex items-center gap-3"><Zap className="w-4 h-4 text-primary" /><span className="font-medium">Provider Dashboard</span></Link></DropdownMenuItem>}
-                    {role === "worker" && <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer bg-accent/5"><Link to="/worker/dashboard" className="flex items-center gap-3"><Zap className="w-4 h-4 text-accent" /><span className="font-medium">Worker Dashboard</span></Link></DropdownMenuItem>}
+                    {activeView !== "customer" && <DropdownMenuItem onClick={() => handleSwitchView("customer")} className="rounded-xl px-3 py-2.5 cursor-pointer"><div className="flex items-center gap-3"><UserCircle className="w-4 h-4 text-primary" /><span className="font-medium">Switch to Customer View</span></div></DropdownMenuItem>}
+                    {hasProviderRecord && activeView !== "provider" && <DropdownMenuItem onClick={() => handleSwitchView("provider")} className="rounded-xl px-3 py-2.5 cursor-pointer"><div className="flex items-center gap-3"><LayoutDashboard className="w-4 h-4 text-primary" /><span className="font-medium">Switch to Provider View</span></div></DropdownMenuItem>}
+                    {hasWorkerRecord && activeView !== "worker" && <DropdownMenuItem onClick={() => handleSwitchView("worker")} className="rounded-xl px-3 py-2.5 cursor-pointer"><div className="flex items-center gap-3"><LayoutDashboard className="w-4 h-4 text-accent" /><span className="font-medium">Switch to Worker View</span></div></DropdownMenuItem>}
+                    {activeView === "provider" && <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer bg-primary/5"><Link to="/provider/dashboard" className="flex items-center gap-3"><Zap className="w-4 h-4 text-primary" /><span className="font-medium">Provider Dashboard</span></Link></DropdownMenuItem>}
+                    {activeView === "worker" && <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5 cursor-pointer bg-accent/5"><Link to="/worker/dashboard" className="flex items-center gap-3"><Zap className="w-4 h-4 text-accent" /><span className="font-medium">Worker Dashboard</span></Link></DropdownMenuItem>}
                     {hasProviderRecord && (
                       <>
                         <DropdownMenuSeparator />
@@ -335,7 +330,7 @@ const Navbar = () => {
                   </Avatar>
                   <div>
                     <p className="text-sm font-bold">{profile?.full_name || "User"}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{role}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{activeView}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -343,9 +338,9 @@ const Navbar = () => {
                   <Link to="/my-bookings" onClick={() => setOpen(false)} className="text-[11px] font-bold text-center py-2 bg-background rounded-lg border border-border">BOOKINGS</Link>
                 </div>
                 <div className="mt-3 space-y-2">
-                  {role !== "customer" && <Button variant="ghost" onClick={() => { handleSwitchView("customer"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-primary/5 text-primary hover:bg-primary/10"><UserCircle className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO CUSTOMER VIEW</span></Button>}
-                  {hasProviderRecord && role !== "provider" && <Button variant="ghost" onClick={() => { handleSwitchView("provider"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-primary/5 text-primary hover:bg-primary/10"><LayoutDashboard className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO PROVIDER VIEW</span></Button>}
-                  {hasWorkerRecord && role !== "worker" && <Button variant="ghost" onClick={() => { handleSwitchView("worker"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-accent/5 text-accent hover:bg-accent/10"><LayoutDashboard className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO WORKER VIEW</span></Button>}
+                  {activeView !== "customer" && <Button variant="ghost" onClick={() => { handleSwitchView("customer"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-primary/5 text-primary hover:bg-primary/10"><UserCircle className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO CUSTOMER VIEW</span></Button>}
+                  {hasProviderRecord && activeView !== "provider" && <Button variant="ghost" onClick={() => { handleSwitchView("provider"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-primary/5 text-primary hover:bg-primary/10"><LayoutDashboard className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO PROVIDER VIEW</span></Button>}
+                  {hasWorkerRecord && activeView !== "worker" && <Button variant="ghost" onClick={() => { handleSwitchView("worker"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-accent/5 text-accent hover:bg-accent/10"><LayoutDashboard className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO WORKER VIEW</span></Button>}
                 </div>
                 {role === "customer" && !hasProviderRecord && !hasWorkerRecord && (
                   <div className="mt-3 flex flex-col gap-2">

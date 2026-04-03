@@ -27,7 +27,7 @@ const experienceOptions = ["< 1 year", "1-3 years", "3-5 years", "5-10 years", "
 
 const WorkerSetup = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, role } = useAuth();
+  const { user, loading: authLoading, role, setDbRole } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -74,7 +74,6 @@ const WorkerSetup = () => {
     const { error: profileError } = await supabase
       .from("profiles")
       .update({ 
-        role: "worker",
         service_category: form.service_category,
         experience: form.experience,
         full_name: form.name || undefined
@@ -82,6 +81,7 @@ const WorkerSetup = () => {
       .eq("user_id", user.id);
 
     if (!profileError) {
+      await setDbRole("worker");
       toast({ title: "Registration Successful!", description: "You are now registered as a worker. Providers can now find and add you." });
       navigate("/worker/dashboard");
     } else {
