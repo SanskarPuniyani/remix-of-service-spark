@@ -330,7 +330,7 @@ const Navbar = () => {
                   </Avatar>
                   <div>
                     <p className="text-sm font-bold">{profile?.full_name || "User"}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{role}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{activeView}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -338,9 +338,9 @@ const Navbar = () => {
                   <Link to="/my-bookings" onClick={() => setOpen(false)} className="text-[11px] font-bold text-center py-2 bg-background rounded-lg border border-border">BOOKINGS</Link>
                 </div>
                 <div className="mt-3 space-y-2">
-                  {role !== "customer" && <Button variant="ghost" onClick={() => { handleSwitchView("customer"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-primary/5 text-primary hover:bg-primary/10"><UserCircle className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO CUSTOMER VIEW</span></Button>}
-                  {hasProviderRecord && role !== "provider" && <Button variant="ghost" onClick={() => { handleSwitchView("provider"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-primary/5 text-primary hover:bg-primary/10"><LayoutDashboard className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO PROVIDER VIEW</span></Button>}
-                  {hasWorkerRecord && role !== "worker" && <Button variant="ghost" onClick={() => { handleSwitchView("worker"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-accent/5 text-accent hover:bg-accent/10"><LayoutDashboard className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO WORKER VIEW</span></Button>}
+                  {activeView !== "customer" && <Button variant="ghost" onClick={() => { handleSwitchView("customer"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-primary/5 text-primary hover:bg-primary/10"><UserCircle className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO CUSTOMER VIEW</span></Button>}
+                  {hasProviderRecord && activeView !== "provider" && <Button variant="ghost" onClick={() => { handleSwitchView("provider"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-primary/5 text-primary hover:bg-primary/10"><LayoutDashboard className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO PROVIDER VIEW</span></Button>}
+                  {hasWorkerRecord && activeView !== "worker" && <Button variant="ghost" onClick={() => { handleSwitchView("worker"); setOpen(false); }} className="w-full justify-start gap-3 rounded-xl h-11 bg-accent/5 text-accent hover:bg-accent/10"><LayoutDashboard className="w-4 h-4" /><span className="text-xs font-bold">SWITCH TO WORKER VIEW</span></Button>}
                 </div>
                 {role === "customer" && !hasProviderRecord && !hasWorkerRecord && (
                   <div className="mt-3 flex flex-col gap-2">
