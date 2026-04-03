@@ -485,15 +485,17 @@ const ProviderDashboard = () => {
                         </div>
                       </button>
                     ))}
-                    <div className="border-t border-border/50 my-2 pt-2">
-                      <button 
-                        onClick={() => navigate("/provider/setup")}
-                        className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-primary hover:bg-primary/5 transition-all"
-                      >
-                        <PlusCircle className="w-5 h-5" />
-                        <span className="text-sm font-semibold">Add New Service</span>
-                      </button>
-                    </div>
+                    {availableCategories.length > 0 && (
+                      <div className="border-t border-border/50 my-2 pt-2">
+                        <button 
+                          onClick={() => { setShowAddCategories(true); setSelectedNewCategories([]); }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-primary hover:bg-primary/5 transition-all"
+                        >
+                          <PlusCircle className="w-5 h-5" />
+                          <span className="text-sm font-semibold">Add More Categories</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
