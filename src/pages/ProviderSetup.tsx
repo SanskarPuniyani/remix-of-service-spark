@@ -62,7 +62,7 @@ const ProviderSetup = () => {
       setLoading(false);
       return;
     }
-    const initials = form.avatar_initials || form.service_name.slice(0, 2).toUpperCase();
+    const initials = form.avatar_initials || form.selected_categories[0]?.slice(0, 2).toUpperCase() || "SP";
 
     let lat = form.latitude;
     let lon = form.longitude;
@@ -86,7 +86,7 @@ const ProviderSetup = () => {
       supabase.from("providers").insert({
         user_id: user.id,
         service_category: category,
-        service_name: form.service_name,
+        service_name: category,
         base_price: form.base_price,
         experience: form.experience,
         service_area: form.service_area,
@@ -228,18 +228,6 @@ const ProviderSetup = () => {
                 </div>
               </div>
 
-              {/* Service Name */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Service Title</label>
-                <input
-                  type="text"
-                  required
-                  value={form.service_name}
-                  onChange={(e) => update("service_name", e.target.value)}
-                  placeholder="e.g. Expert Electrician"
-                  className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border/30 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-sm"
-                />
-              </div>
 
               {/* Price & Experience row */}
               <div className="grid grid-cols-2 gap-4">
@@ -318,7 +306,7 @@ const ProviderSetup = () => {
               {/* Submit */}
               <motion.button
                 type="submit"
-                disabled={loading || form.selected_categories.length === 0 || !form.service_name || !form.service_area}
+                disabled={loading || form.selected_categories.length === 0 || !form.service_area}
                 className="w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground mt-4 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                 style={{
                   background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
