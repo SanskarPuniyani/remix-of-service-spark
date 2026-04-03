@@ -86,7 +86,7 @@ const ProviderSetup = () => {
       supabase.from("providers").insert({
         user_id: user.id,
         service_category: category,
-        service_name: form.service_name,
+        service_name: category,
         base_price: form.base_price,
         experience: form.experience,
         service_area: form.service_area,
