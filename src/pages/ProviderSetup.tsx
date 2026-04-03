@@ -306,7 +306,7 @@ const ProviderSetup = () => {
               {/* Submit */}
               <motion.button
                 type="submit"
-                disabled={loading || form.selected_categories.length === 0 || !form.service_name || !form.service_area}
+                disabled={loading || form.selected_categories.length === 0 || !form.service_area}
                 className="w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-primary-foreground mt-4 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                 style={{
                   background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
