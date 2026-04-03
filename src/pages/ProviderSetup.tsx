@@ -228,18 +228,6 @@ const ProviderSetup = () => {
                 </div>
               </div>
 
-              {/* Service Name */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Service Title</label>
-                <input
-                  type="text"
-                  required
-                  value={form.service_name}
-                  onChange={(e) => update("service_name", e.target.value)}
-                  placeholder="e.g. Expert Electrician"
-                  className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border/30 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-sm"
-                />
-              </div>
 
               {/* Price & Experience row */}
               <div className="grid grid-cols-2 gap-4">
