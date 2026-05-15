@@ -131,6 +131,68 @@ export type Database = {
             referencedRelation: "providers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      complaints: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          provider_id: string | null
+          status: string | null
+          subject: string
+          user_id: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          provider_id?: string | null
+          status?: string | null
+          subject: string
+          user_id?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          provider_id?: string | null
+          status?: string | null
+          subject?: string
+          user_id?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "complaints_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -230,7 +292,15 @@ export type Database = {
           service_name?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "providers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -285,6 +355,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       workers: {
         Row: {
