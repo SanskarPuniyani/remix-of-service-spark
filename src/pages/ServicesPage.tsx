@@ -380,11 +380,7 @@ const ServicesPage = () => {
 
       const userLat = defaultAddr?.latitude ?? userProfile?.latitude;
       const userLon = defaultAddr?.longitude ?? userProfile?.longitude;
-
-      if (!userProfile?.city) {
-        setLoading(false);
-        return;
-      }
+      const userCity = (userProfile?.city || "").trim().toLowerCase();
 
       const { data, error } = await supabase
         .from("providers")
@@ -453,7 +449,13 @@ const ServicesPage = () => {
               })).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             };
           })
-          .filter(p => p.city === userProfile.city);
+          .filter(p => {
+            // Match by city when both sides have it; otherwise fall back to proximity (within 50km).
+            const providerCity = (p.city || "").trim().toLowerCase();
+            if (userCity && providerCity) return providerCity === userCity;
+            if (typeof p.distance === "number") return p.distance <= 50;
+            return true;
+          });
 
         setProviders(filteredProviders);
         
