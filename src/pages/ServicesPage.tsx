@@ -380,11 +380,7 @@ const ServicesPage = () => {
 
       const userLat = defaultAddr?.latitude ?? userProfile?.latitude;
       const userLon = defaultAddr?.longitude ?? userProfile?.longitude;
-
-      if (!userProfile?.city) {
-        setLoading(false);
-        return;
-      }
+      const userCity = (userProfile?.city || "").trim().toLowerCase();
 
       const { data, error } = await supabase
         .from("providers")
