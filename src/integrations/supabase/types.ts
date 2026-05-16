@@ -435,7 +435,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      customer_can_reactivate_worker: {
+        Args: { _user_id: string; _worker_id: string }
+        Returns: boolean
+      }
+      is_booking_customer: {
+        Args: { _booking_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_worker_for_booking: {
+        Args: { _booking_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
